@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"os/signal"
@@ -12,18 +14,37 @@ import (
 	"github.com/go-telegram/bot/models"
 )
 
+const ConfigFileName = "/data/options.json"
+
+// Config ...
+type Config struct {
+	Token string `json:"TOKEN"`
+}
+
 func main() {
-	// fetcha all env variables
-	for _, element := range os.Environ() {
-		variable := strings.Split(element, "=")
-		log.Println(variable[0], "=>", variable[1])
+	token := ""
+	var initFromFile = false
+
+	if _, err := os.Stat(ConfigFileName); err == nil {
+		jsonFile, err := os.Open(ConfigFileName)
+		if err == nil {
+			config := &Config{}
+
+			byteValue, _ := io.ReadAll(jsonFile)
+			if err = json.Unmarshal(byteValue, &config); err != nil {
+				log.Printf("error on unmarshal config from file %s\n", err.Error())
+			} else {
+				token = config.Token
+
+				initFromFile = true
+			}
+		}
 	}
 
-	log.Println("args:", os.Args)
-
-	token := ""
-	flag.StringVar(&token, "TOKEN", lookupEnvOrString("TOKEN", token), "telegram bot token")
-	flag.Parse()
+	if !initFromFile {
+		flag.StringVar(&token, "TOKEN", lookupEnvOrString("TOKEN", token), "telegram bot token")
+		flag.Parse()
+	}
 
 	if token == "" {
 		log.Fatal("TOKEN env var not set")
