@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -12,12 +13,12 @@ import (
 )
 
 func main() {
-
 	token := ""
-	if tokenEnv, ok := os.LookupEnv("TOKEN"); !ok {
+	flag.StringVar(&token, "token", lookupEnvOrString("TOKEN", token), "telegram bot token")
+	flag.Parse()
+
+	if token == "" {
 		log.Fatal("TOKEN env var not set")
-	} else {
-		token = tokenEnv
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -32,6 +33,14 @@ func main() {
 	log.Println("bot started")
 
 	b.Start(ctx)
+}
+
+func lookupEnvOrString(key, defaultVal string) string {
+	if val, ok := os.LookupEnv(key); ok {
+		return val
+	}
+
+	return defaultVal
 }
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
