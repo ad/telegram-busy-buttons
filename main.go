@@ -13,6 +13,14 @@ import (
 )
 
 func main() {
+	// fetcha all env variables
+	for _, element := range os.Environ() {
+		variable := strings.Split(element, "=")
+		log.Println(variable[0], "=>", variable[1])
+	}
+
+	log.Println("args:", os.Args)
+
 	token := ""
 	flag.StringVar(&token, "TOKEN", lookupEnvOrString("TOKEN", token), "telegram bot token")
 	flag.Parse()
