@@ -20,6 +20,7 @@ func main() {
 	}
 
 	b := bot.New("...", opts...)
+
 	fmt.Println("bot started")
 
 	b.Start(ctx)
@@ -27,37 +28,39 @@ func main() {
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
-		fmt.Printf("callback id %d\n%s <- %s \n%#v\n", update.ID, update.CallbackQuery.Message.Text, update.CallbackQuery.Data, update.CallbackQuery.Message.ReplyMarkup)
-
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{},
 		}
 
+		messageText := update.CallbackQuery.Message.Text
 		if update.CallbackQuery.Message.ReplyMarkup != nil {
 			switch c := update.CallbackQuery.Message.ReplyMarkup.(type) {
 			case map[string]interface{}:
-				// fmt.Printf("Item %#v\n", c["inline_keyboard"])
 				buttons := []models.InlineKeyboardButton{}
-
+				items := []string{}
 				for _, v := range c["inline_keyboard"].([]interface{}) {
 					subitems := v.([]interface{})
 					for _, i := range subitems {
-						fmt.Printf("SubItem %s => %s\n", i.(map[string]interface{})["callback_data"], i.(map[string]interface{})["text"])
 						text := i.(map[string]interface{})["text"].(string)
 						callbackData := i.(map[string]interface{})["callback_data"].(string)
 
 						if callbackData == update.CallbackQuery.Data {
 							if strings.HasPrefix(callbackData, "busy-") {
 								callbackData = strings.Replace(callbackData, "busy-", "free-", 1)
-								text = strings.Replace(text, "🟢", "🛑", 1)
+								text = strings.Replace(text, "🟢", "🏗️", 1)
 							} else {
 								callbackData = strings.Replace(callbackData, "free-", "busy-", 1)
-								text = strings.Replace(text, "🛑", "🟢", 1)
+								text = strings.Replace(text, "🏗️", "🟢", 1)
 							}
 						}
 
+						items = append(items, text)
+
 						buttons = append(buttons, models.InlineKeyboardButton{Text: text, CallbackData: callbackData})
 					}
+				}
+				if len(items) > 0 {
+					messageText = strings.Join(items, "  ")
 				}
 
 				kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
@@ -66,20 +69,10 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			}
 		}
 
-		// kb = &models.InlineKeyboardMarkup{
-		// 	InlineKeyboard: [][]models.InlineKeyboardButton{
-		// 		{
-		// 			{Text: "🟢 testing-id", CallbackData: "busy-testing-id"},
-		// 			{Text: "🛑 testing-1", CallbackData: "free-testing-1"},
-		// 			{Text: "🟢 testing-2", CallbackData: "busy-testing-2"},
-		// 		},
-		// 	},
-		// }
-
 		editedMessage := &bot.EditMessageTextParams{
 			ChatID:      update.CallbackQuery.Message.Chat.ID,
 			MessageID:   update.CallbackQuery.Message.ID,
-			Text:        update.CallbackQuery.Message.Text,
+			Text:        messageText,
 			ReplyMarkup: kb,
 		}
 
@@ -88,11 +81,25 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	fmt.Printf("message %#v\n", update)
+	if update.Message != nil && update.Message.Text == "/start" {
+		kb := &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{
+				{
+					{Text: "🟢 testing-id", CallbackData: "busy-testing-id"},
+					{Text: "🟢 testing-1", CallbackData: "busy-testing-1"},
+					{Text: "🟢 testing-2", CallbackData: "busy-testing-2"},
+				},
+			},
+		}
 
-	// echo
-	// b.SendMessage(ctx, &bot.SendMessageParams{
-	// 	ChatID: update.Message.Chat.ID,
-	// 	Text:   update.Message.Text,
-	// })
+		b.SendMessage(ctx, &bot.SendMessageParams{
+			ChatID:      update.Message.Chat.ID,
+			Text:        "🟢 testing-id  🟢 testing-1  🟢 testing-2",
+			ReplyMarkup: kb,
+		})
+
+		return
+	}
+
+	fmt.Printf("message %#v\n", update)
 }
