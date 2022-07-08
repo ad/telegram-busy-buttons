@@ -1,0 +1,23 @@
+{
+    "name": "telegram-busy-buttons",
+    "version": "0.1.1",
+    "slug": "telegram-busy-buttons",
+    "description": "",
+    "startup": "application",
+    "boot": "auto",
+    "arch": [
+     "amd64",
+     "armv7",
+     "aarch64",
+     "i386"
+    ],
+    "map": [
+     "share:rw"
+    ],
+    "options": {
+        "TOKEN": "",
+      },
+      "schema": {
+        "TOKEN": "str"
+      }
+   }

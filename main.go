@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -12,6 +12,14 @@ import (
 )
 
 func main() {
+
+	token := ""
+	if tokenEnv, ok := os.LookupEnv("TOKEN"); !ok {
+		log.Fatal("TOKEN env var not set")
+	} else {
+		token = tokenEnv
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
@@ -19,9 +27,9 @@ func main() {
 		bot.WithDefaultHandler(handler),
 	}
 
-	b := bot.New("...", opts...)
+	b := bot.New(token, opts...)
 
-	fmt.Println("bot started")
+	log.Println("bot started")
 
 	b.Start(ctx)
 }
@@ -101,5 +109,5 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	fmt.Printf("message %#v\n", update)
+	log.Printf("message %#v\n", update)
 }
