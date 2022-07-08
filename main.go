@@ -127,7 +127,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	if update.Message != nil && update.Message.Text == "/start" {
+	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/start") {
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{
 				{
