@@ -14,7 +14,7 @@ import (
 
 func main() {
 	token := ""
-	flag.StringVar(&token, "token", lookupEnvOrString("TOKEN", token), "telegram bot token")
+	flag.StringVar(&token, "TOKEN", lookupEnvOrString("TOKEN", token), "telegram bot token")
 	flag.Parse()
 
 	if token == "" {
