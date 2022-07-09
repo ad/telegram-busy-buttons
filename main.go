@@ -149,9 +149,9 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/create") {
 		message := strings.Trim(regexp.MustCompile(`\s+`).ReplaceAllString(update.Message.Text, " "), " ")
-		parts := strings.Split(strings.Trim(strings.TrimPrefix(message, "/create"), " "), " ")
+		parts := strings.Fields(message)
 
-		if len(parts) < 1 {
+		if len(parts) < 2 {
 			b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: update.Message.Chat.ID,
 				Text:   "you must send command in format /create name1 name2 nameN",
@@ -168,7 +168,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		buttons := []models.InlineKeyboardButton{}
 		items := []string{}
-		for _, v := range parts {
+		for _, v := range parts[1:] {
 			text := "🟢 " + v
 			callbackData := "busy-" + v
 
