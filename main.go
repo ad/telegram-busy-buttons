@@ -149,7 +149,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/create") {
 		message := strings.Trim(regexp.MustCompile(`\s+`).ReplaceAllString(update.Message.Text, " "), " ")
-		parts := strings.Split(strings.TrimPrefix(message, "/create"), " ")
+		parts := strings.Split(strings.Trim(strings.TrimPrefix(message, "/create"), " "), " ")
 
 		if len(parts) < 1 {
 			b.SendMessage(ctx, &bot.SendMessageParams{
