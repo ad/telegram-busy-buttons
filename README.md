@@ -1,7 +1,7 @@
 # telegram-busy-buttons
 
-Логика работы:
+send `/create name1 name2 nameN` to bot
 
-Бот на команду `/start` отвечает сообщением `🟢 testing-id  🟢 testing-1  🟢 testing-2` и кнопками с соответствующими надписями
+bot answers with message+buttons, now you can interact with it
 
-Если в сообщении нажать на кнопку, то надпись сообщении меняется, пример `🟢 testing-id  🏗️ testing-1  🟢 testing-2`
+![ezgif-2-6f3a3b9270](https://user-images.githubusercontent.com/35623/178100006-3d1de9be-4319-44f2-a239-e4f6da02689a.gif)
