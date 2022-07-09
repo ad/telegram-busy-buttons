@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 
 	"github.com/go-telegram/bot"
@@ -146,20 +147,43 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		return
 	}
 
-	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/start") {
-		kb := &models.InlineKeyboardMarkup{
-			InlineKeyboard: [][]models.InlineKeyboardButton{
-				{
-					{Text: "🟢 testing-id", CallbackData: "busy-testing-id"},
-					{Text: "🟢 testing-1", CallbackData: "busy-testing-1"},
-					{Text: "🟢 testing-2", CallbackData: "busy-testing-2"},
-				},
-			},
+	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/create") {
+		message := strings.Trim(regexp.MustCompile(`\s+`).ReplaceAllString(update.Message.Text, " "), " ")
+		parts := strings.Split(strings.TrimPrefix(message, "/create"), " ")
+
+		if len(parts) < 1 {
+			b.SendMessage(ctx, &bot.SendMessageParams{
+				ChatID: update.Message.Chat.ID,
+				Text:   "you must send command in format /create name1 name2 nameN",
+			})
+
+			return
 		}
+
+		messageText := ""
+
+		kb := &models.InlineKeyboardMarkup{
+			InlineKeyboard: [][]models.InlineKeyboardButton{},
+		}
+
+		buttons := []models.InlineKeyboardButton{}
+		items := []string{}
+		for _, v := range parts {
+			text := "🟢 " + v
+			callbackData := "busy-" + v
+
+			items = append(items, text)
+			buttons = append(buttons, models.InlineKeyboardButton{Text: text, CallbackData: callbackData})
+		}
+		if len(items) > 0 {
+			messageText = strings.Join(items, "  ")
+		}
+
+		kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
 
 		b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:      update.Message.Chat.ID,
-			Text:        "🟢 testing-id  🟢 testing-1  🟢 testing-2",
+			Text:        messageText,
 			ReplyMarkup: kb,
 		})
 
