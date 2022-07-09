@@ -74,6 +74,9 @@ func lookupEnvOrString(key, defaultVal string) string {
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
+		// hide Loading... message
+		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{CallbackQueryID: update.CallbackQuery.ID})
+
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{},
 		}
