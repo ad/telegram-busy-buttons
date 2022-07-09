@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -74,8 +75,23 @@ func lookupEnvOrString(key, defaultVal string) string {
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
-		// hide Loading... message
-		b.AnswerCallbackQuery(ctx, &bot.AnswerCallbackQueryParams{CallbackQueryID: update.CallbackQuery.ID})
+		notificationText := fmt.Sprintf(
+			"%s updated by %s %s",
+			strings.TrimPrefix("free-", strings.TrimPrefix("busy-", update.CallbackQuery.Data)),
+			update.CallbackQuery.Sender.FirstName,
+			update.CallbackQuery.Sender.LastName,
+		)
+
+		log.Println(notificationText)
+
+		// hide Loading... message and show who pressed button
+		b.AnswerCallbackQuery(
+			ctx,
+			&bot.AnswerCallbackQueryParams{
+				CallbackQueryID: update.CallbackQuery.ID,
+				Text:            notificationText,
+			},
+		)
 
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{},
