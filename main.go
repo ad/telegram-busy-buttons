@@ -77,7 +77,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
 		notificationText := fmt.Sprintf(
 			"%s updated by %s %s",
-			strings.TrimPrefix("free-", strings.TrimPrefix("busy-", update.CallbackQuery.Data)),
+			strings.TrimPrefix(strings.TrimPrefix(update.CallbackQuery.Data, "free-"), "busy-"),
 			update.CallbackQuery.Sender.FirstName,
 			update.CallbackQuery.Sender.LastName,
 		)
