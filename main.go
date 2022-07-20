@@ -23,6 +23,11 @@ type Config struct {
 	Token string `json:"TOKEN"`
 }
 
+type CallbackData struct {
+	Command string `json:"c"`
+	User    string `json:"u",omitempty`
+}
+
 func main() {
 	token := ""
 	var initFromFile = false
@@ -76,14 +81,26 @@ func lookupEnvOrString(key, defaultVal string) string {
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
+		cbdMessage := &CallbackData{}
+		target := ""
+		if strings.HasPrefix(update.CallbackQuery.Data, "free-") || strings.HasPrefix(update.CallbackQuery.Data, "busy-") {
+			target = strings.TrimPrefix(strings.TrimPrefix(update.CallbackQuery.Data, "free-"), "busy-")
+		} else {
+			if err := json.Unmarshal([]byte(update.CallbackQuery.Data), cbdMessage); err != nil {
+				log.Printf("error on unmarshal callback data %s\n", err.Error())
+			} else {
+				target = strings.TrimPrefix(strings.TrimPrefix(cbdMessage.Command, "free-"), "busy-")
+			}
+		}
+
 		notificationText := fmt.Sprintf(
 			"%s updated by %s %s",
-			strings.TrimPrefix(strings.TrimPrefix(update.CallbackQuery.Data, "free-"), "busy-"),
+			target,
 			update.CallbackQuery.Sender.FirstName,
 			update.CallbackQuery.Sender.LastName,
 		)
 
-		log.Println(notificationText)
+		log.Printf("update %#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
 
 		// hide Loading... message and show who pressed button
 		b.AnswerCallbackQuery(
@@ -107,22 +124,62 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 				for _, v := range c["inline_keyboard"].([]interface{}) {
 					subitems := v.([]interface{})
 					for _, i := range subitems {
-						text := i.(map[string]interface{})["text"].(string)
+						// fmt.Printf("%#v\n", i.(map[string]interface{}))
 						callbackData := i.(map[string]interface{})["callback_data"].(string)
+						text := i.(map[string]interface{})["text"].(string)
 
-						if callbackData == update.CallbackQuery.Data {
-							if strings.HasPrefix(callbackData, "busy-") {
-								callbackData = strings.Replace(callbackData, "busy-", "free-", 1)
-								text = strings.Replace(text, "🟢", "🏗️", 1)
+						cbd := &CallbackData{}
+
+						if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
+							log.Printf("error on unmarshal callback data %s\n", err.Error())
+							if callbackData == update.CallbackQuery.Data {
+								if strings.HasPrefix(callbackData, "busy-") {
+									text = strings.Replace(text, "🟢", "🏗️", 1)
+									cbd.Command = strings.Replace(callbackData, "busy-", "free-", 1)
+								} else if strings.HasPrefix(callbackData, "free-") {
+									text = strings.Replace(text, "🏗️", "🟢", 1)
+									cbd.Command = strings.Replace(callbackData, "free-", "busy-", 1)
+								}
 							} else {
-								callbackData = strings.Replace(callbackData, "free-", "busy-", 1)
-								text = strings.Replace(text, "🏗️", "🟢", 1)
+								cbd.Command = callbackData
+							}
+						} else {
+							if cbd.Command == cbdMessage.Command {
+								if strings.HasPrefix(cbd.Command, "busy-") {
+									text = strings.Replace(text, "🟢", "🏗️", 1)
+									cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
+								} else if strings.HasPrefix(cbd.Command, "free-") {
+									text = strings.Replace(text, "🏗️", "🟢", 1)
+									cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
+								}
 							}
 						}
 
-						items = append(items, text)
+						cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
-						buttons = append(buttons, models.InlineKeyboardButton{Text: text, CallbackData: callbackData})
+						// log.Printf("%#v\n", cbd)
+
+						itemText := text
+						if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
+							itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
+						}
+
+						items = append(items, itemText)
+
+						cbdToSend, err := json.Marshal(cbd)
+						if err != nil {
+							log.Printf("%#v, err %s\n", cbd, err)
+
+							return
+						}
+
+						buttons = append(
+							buttons,
+							models.InlineKeyboardButton{
+								CallbackData: string(cbdToSend),
+								Text:         text,
+							},
+						)
 					}
 				}
 				if len(items) > 0 {
@@ -142,7 +199,10 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			ReplyMarkup: kb,
 		}
 
-		b.EditMessageText(ctx, editedMessage)
+		_, err := b.EditMessageText(ctx, editedMessage)
+		if err != nil {
+			log.Printf("error on edit message %s, %#v %#v\n", err.Error(), editedMessage, editedMessage.ReplyMarkup)
+		}
 
 		return
 	}
@@ -150,6 +210,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.Message != nil && strings.HasPrefix(update.Message.Text, "/create") {
 		message := strings.Trim(regexp.MustCompile(`\s+`).ReplaceAllString(update.Message.Text, " "), " ")
 		parts := strings.Fields(message)
+
+		log.Printf("message %#v from %d\n", message, update.Message.Chat.ID)
 
 		if len(parts) < 2 {
 			b.SendMessage(ctx, &bot.SendMessageParams{
@@ -170,11 +232,55 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		items := []string{}
 		for _, v := range parts[1:] {
 			text := "🟢 " + v
-			callbackData := "busy-" + v
+			callbackData := CallbackData{
+				Command: "busy-" + v,
+			}
+
+			cbd, err := json.Marshal(callbackData)
+			if err != nil {
+				b.SendMessage(ctx, &bot.SendMessageParams{
+					ChatID: update.Message.Chat.ID,
+					Text:   "Failed to create buttons",
+				})
+
+				return
+			}
 
 			items = append(items, text)
-			buttons = append(buttons, models.InlineKeyboardButton{Text: text, CallbackData: callbackData})
+			buttons = append(
+				buttons,
+				models.InlineKeyboardButton{
+					CallbackData: string(cbd),
+					Text:         text,
+				},
+			)
 		}
+		// old style
+		// for _, v := range parts[1:] {
+		// 	text := "🟢 " + v
+		// 	callbackData := CallbackData{
+		// 		Command: "busy-" + v,
+		// 	}
+
+		// 	cbd, err := json.Marshal(callbackData)
+		// 	if err != nil {
+		// 		b.SendMessage(ctx, &bot.SendMessageParams{
+		// 			ChatID: update.Message.Chat.ID,
+		// 			Text:   "Failed to create buttons",
+		// 		})
+
+		// 		return
+		// 	}
+
+		// 	items = append(items, text)
+		// 	buttons = append(
+		// 		buttons,
+		// 		models.InlineKeyboardButton{
+		// 			CallbackData: string(cbd),
+		// 			Text:         text,
+		// 		},
+		// 	)
+		// }
 		if len(items) > 0 {
 			messageText = strings.Join(items, "  ")
 		}
@@ -189,6 +295,4 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		return
 	}
-
-	log.Printf("message %#v\n", update)
 }
