@@ -133,6 +133,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 						if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
 							log.Printf("error on unmarshal callback data %s\n", err.Error())
 							if callbackData == update.CallbackQuery.Data {
+								cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+
 								if strings.HasPrefix(callbackData, "busy-") {
 									text = strings.Replace(text, "🟢", "🏗️", 1)
 									cbd.Command = strings.Replace(callbackData, "busy-", "free-", 1)
@@ -145,6 +147,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							}
 						} else {
 							if cbd.Command == cbdMessage.Command {
+								cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+
 								if strings.HasPrefix(cbd.Command, "busy-") {
 									text = strings.Replace(text, "🟢", "🏗️", 1)
 									cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
@@ -154,10 +158,6 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 								}
 							}
 						}
-
-						cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
-
-						// log.Printf("%#v\n", cbd)
 
 						itemText := text
 						if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
