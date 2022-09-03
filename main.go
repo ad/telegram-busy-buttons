@@ -25,7 +25,7 @@ type Config struct {
 
 type CallbackData struct {
 	Command string `json:"c"`
-	User    string `json:"u",omitempty`
+	User    string `json:"u"`
 }
 
 func main() {
@@ -147,7 +147,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							}
 						} else {
 							if cbd.Command == cbdMessage.Command {
-								cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+								cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
 								if strings.HasPrefix(cbd.Command, "busy-") {
 									text = strings.Replace(text, "🟢", "🏗️", 1)
@@ -303,6 +303,10 @@ func shortenUsername(command, name, lastname string) string {
 
 	limit := 64 - 18 - len(command)
 
+	if limit <= 0 {
+		return ""
+	}
+
 	if len(name) <= 0 && len(lastname) <= 0 {
 		return ""
 	}
@@ -317,7 +321,9 @@ func shortenUsername(command, name, lastname string) string {
 		}
 
 		if len(name) > limit {
-			return string([]rune(name)[0:limit])
+			if len([]rune(name)) >= limit {
+				return string([]rune(name)[0:limit])
+			}
 		}
 
 		if len(lastname) > limit {
