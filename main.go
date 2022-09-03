@@ -133,7 +133,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 						if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
 							log.Printf("error on unmarshal callback data %s\n", err.Error())
 							if callbackData == update.CallbackQuery.Data {
-								cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+								cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
 								if strings.HasPrefix(callbackData, "busy-") {
 									text = strings.Replace(text, "🟢", "🏗️", 1)
@@ -147,7 +147,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							}
 						} else {
 							if cbd.Command == cbdMessage.Command {
-								cbd.User = fmt.Sprintf("%s %s", update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+								cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
 								if strings.HasPrefix(cbd.Command, "busy-") {
 									text = strings.Replace(text, "🟢", "🏗️", 1)
@@ -295,4 +295,35 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		return
 	}
+}
+
+// shorten text on button to limit 64 chars
+func shortenUsername(command, name, lastname string) string {
+	// 18 chars is allocated to struct {"c": "", "u": ""}
+
+	limit := 64 - 18 - len(command)
+
+	if len(name) <= 0 && len(lastname) <= 0 {
+		return ""
+	}
+
+	if len(name)+len(lastname) < limit {
+		return name + " " + lastname
+	}
+
+	if len(name) > 0 {
+		if len(name) < limit-3 {
+			return name + " " + string([]rune(lastname)[0:1]) + "."
+		}
+
+		if len(name) > limit {
+			return string([]rune(name)[0:limit])
+		}
+
+		if len(lastname) > limit {
+			return string([]rune(lastname)[0:limit])
+		}
+	}
+
+	return ""
 }
