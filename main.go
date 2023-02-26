@@ -103,7 +103,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Printf("update %#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
 
 		// hide Loading... message and show who pressed button
-		b.AnswerCallbackQuery(
+		_, _ = b.AnswerCallbackQuery(
 			ctx,
 			&bot.AnswerCallbackQueryParams{
 				CallbackQueryID: update.CallbackQuery.ID,
@@ -214,7 +214,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		log.Printf("message %#v from %d\n", message, update.Message.Chat.ID)
 
 		if len(parts) < 2 {
-			b.SendMessage(ctx, &bot.SendMessageParams{
+			_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 				ChatID: update.Message.Chat.ID,
 				Text:   "you must send command in format /create name1 name2 nameN",
 			})
@@ -238,7 +238,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 			cbd, err := json.Marshal(callbackData)
 			if err != nil {
-				b.SendMessage(ctx, &bot.SendMessageParams{
+				_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 					ChatID: update.Message.Chat.ID,
 					Text:   "Failed to create buttons",
 				})
@@ -287,7 +287,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
 
-		b.SendMessage(ctx, &bot.SendMessageParams{
+		_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 			ChatID:      update.Message.Chat.ID,
 			Text:        messageText,
 			ReplyMarkup: kb,
