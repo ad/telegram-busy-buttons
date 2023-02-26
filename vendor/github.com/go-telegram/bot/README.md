@@ -1,10 +1,12 @@
 # Golang Telegram Bot
 
-> The project is under development. API may be changed before v1.0.0 version.
+[![Go Report Card](https://goreportcard.com/badge/github.com/go-telegram/bot)](https://goreportcard.com/report/github.com/go-telegram/bot) [![codecov](https://codecov.io/gh/go-telegram/bot/branch/main/graph/badge.svg?token=57B1OR6PCK)](https://codecov.io/gh/go-telegram/bot)
+
+✅ Present in the list of libraries https://core.telegram.org/bots/samples#go
 
 > [Telegram Group](https://t.me/gotelegrambotui)
 
-> Supports Bot API version: [6.1](https://core.telegram.org/bots/api#june-20-2022) from June 20, 2022
+> Supports Bot API version: [6.5](https://core.telegram.org/bots/api#february-3-2023) from February 3, 2023
 
 It's a Go zero-dependencies telegram bot framework
 
@@ -32,7 +34,10 @@ func main() {
 		bot.WithDefaultHandler(handler),
 	}
 
-	b := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", opts...)
+	b, err := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	b.Start(ctx)
 }
@@ -62,15 +67,18 @@ go get -u github.com/go-telegram/bot
 Initialize and run the bot:
 
 ```go
-b := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
+b, err := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
 
 b.Start(context.TODO())
 ```
 
+On create bot will call the `getMe` method (with 5 sec timeout). And returns error on fail.
+If you want to change this timeout, use option `bot.WithCheckInitTimeout`
+
 You can to define default handler for the bot:
 
 ```go
-b := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", bot.WithDefaultHandler(handler))
+b, err := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", bot.WithDefaultHandler(handler))
 
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	// this handler will be called for all updates
@@ -91,7 +99,7 @@ func main() {
 		bot.WithDefaultHandler(handler),
 	}
 
-	b := bot.New(os.Getenv("EXAMPLE_TELEGRAM_BOT_TOKEN"), opts...)
+	b, _ := bot.New(os.Getenv("EXAMPLE_TELEGRAM_BOT_TOKEN"), opts...)
 
 	// call methods.SetWebhook if needed
 	
@@ -145,7 +153,7 @@ bot.SendMessage(ctx, &bot.SendMessageParams{...})
 You can use options to customize the bot.
 
 ```go
-b := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", opts...)
+b, err := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER", opts...)
 ```
 
 Full list of options you can find [here](options.go)
@@ -157,7 +165,7 @@ For your convenience, you can use `Message.Text` and `CallbackQuery.Data` handle
 An example:
 
 ```go
-b := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
+b, err := bot.New("YOUR_BOT_TOKEN_FROM_BOTFATHER")
 
 b.RegisterHandler(bot.HandlerTypeMessageText, "/start", bot.MatchTypeExact, myStartHandler)
 
@@ -184,12 +192,23 @@ Match Types:
 - `MatchTypePrefix` 
 - `MatchTypeContains`
 
-Also, you can use `RegisterHandlerRegexp` to match by regular expression.
+You can use `RegisterHandlerRegexp` to match by regular expression.
 
 ```go
 re := regexp.MustCompile(`^/start`)
 
 b.RegisterHandlerRegexp(bot.HandlerTypeMessageText, re, myStartHandler)
+```
+
+If you want to use custom handler, use `RegisterHandlerMatchFunc`
+
+```go
+matchFunc := func(update *models.Update) bool {
+	// your checks
+	return true
+}
+
+b.RegisterHandlerMatchFunc(bot.HandlerTypeMessageText, matchFunc, myHandler)
 ```
 
 ## InputFile
@@ -264,6 +283,20 @@ bot.SendMediaGroup(ctx, params)
 ```
 
 [Demo in examples](examples/send_media_group/main.go)
+
+## Helpers
+
+### `EscapeMarkdown(s string) string`
+
+Escape special symbols for Telegram MarkdownV2 syntax 
+
+### `EscapeMarkdownUnescaped(s string) string`
+
+Escape only unescaped special symbols for Telegram MarkdownV2 syntax 
+
+### `RandomString(n int) string`
+
+Returns fast random a-zA-Z string with n length
 
 ## UI Components
 

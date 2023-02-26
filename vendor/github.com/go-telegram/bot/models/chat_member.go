@@ -98,6 +98,7 @@ type ChatMemberAdministrator struct {
 	CanPostMessages     bool   `json:"can_post_messages,omitempty"`
 	CanEditMessages     bool   `json:"can_edit_messages,omitempty"`
 	CanPinMessages      bool   `json:"can_pin_messages,omitempty"`
+	CanManageTopics     bool   `json:"can_manage_topics,omitempty"`
 	CustomTitle         string `json:"custom_title,omitempty"`
 }
 
@@ -112,14 +113,20 @@ type ChatMemberRestricted struct {
 	Status                string `json:"status"` // The member's status in the chat, always “restricted”
 	User                  *User  `json:"user"`
 	IsMember              bool   `json:"is_member"`
-	CanChangeInfo         bool   `json:"can_change_info"`
-	CanInviteUsers        bool   `json:"can_invite_users"`
-	CanPinMessages        bool   `json:"can_pin_messages"`
 	CanSendMessages       bool   `json:"can_send_messages"`
-	CanSendMediaMessages  bool   `json:"can_send_media_messages"`
+	CanSendAudios         bool   `json:"can_send_audios"`
+	CanSendDocuments      bool   `json:"can_send_documents"`
+	CanSendPhotos         bool   `json:"can_send_photos"`
+	CanSendVideos         bool   `json:"can_send_videos"`
+	CanSendVideoNotes     bool   `json:"can_send_video_notes"`
+	CanSendVoiceNotes     bool   `json:"can_send_voice_notes"`
 	CanSendPolls          bool   `json:"can_send_polls"`
 	CanSendOtherMessages  bool   `json:"can_send_other_messages"`
 	CanAddWebPagePreviews bool   `json:"can_add_web_page_previews"`
+	CanChangeInfo         bool   `json:"can_change_info"`
+	CanInviteUsers        bool   `json:"can_invite_users"`
+	CanPinMessages        bool   `json:"can_pin_messages"`
+	CanManageTopics       bool   `json:"can_manage_topics,omitempty"`
 	UntilDate             int    `json:"until_date"`
 }
 
