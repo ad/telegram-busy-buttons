@@ -31,6 +31,7 @@ type InlineKeyboardButton struct {
 // ReplyKeyboardMarkup https://core.telegram.org/bots/api#replykeyboardmarkup
 type ReplyKeyboardMarkup struct {
 	Keyboard              [][]KeyboardButton `json:"keyboard"`
+	IsPersistent          bool               `json:"is_persistent,omitempty"`
 	ResizeKeyboard        bool               `json:"resize_keyboard,omitempty"`
 	OneTimeKeyboard       bool               `json:"one_time_keyboard,omitempty"`
 	InputFieldPlaceholder string             `json:"input_field_placeholder,omitempty"`
@@ -39,11 +40,32 @@ type ReplyKeyboardMarkup struct {
 
 // KeyboardButton https://core.telegram.org/bots/api#keyboardbutton
 type KeyboardButton struct {
-	Text            string                  `json:"text"`
-	RequestContact  bool                    `json:"request_contact,omitempty"`
-	RequestLocation bool                    `json:"request_location,omitempty"`
-	RequestPoll     *KeyboardButtonPollType `json:"request_poll,omitempty"`
-	WebApp          *WebAppInfo             `json:"web_app,omitempty"`
+	Text            string                     `json:"text"`
+	RequestUser     *KeyboardButtonRequestUser `json:"request_user,omitempty"`
+	RequestChat     *KeyboardButtonRequestChat `json:"request_chat,omitempty"`
+	RequestContact  bool                       `json:"request_contact,omitempty"`
+	RequestLocation bool                       `json:"request_location,omitempty"`
+	RequestPoll     *KeyboardButtonPollType    `json:"request_poll,omitempty"`
+	WebApp          *WebAppInfo                `json:"web_app,omitempty"`
+}
+
+// KeyboardButtonRequestUser https://core.telegram.org/bots/api#keyboardbuttonrequestuser
+type KeyboardButtonRequestUser struct {
+	RequestID     int32 `json:"request_id"`
+	UserIsBot     bool  `json:"user_is_bot,omitempty"`
+	UserIsPremium bool  `json:"user_is_premium,omitempty"`
+}
+
+// KeyboardButtonRequestChat https://core.telegram.org/bots/api#keyboardbuttonrequestchat
+type KeyboardButtonRequestChat struct {
+	RequestID               int32                    `json:"request_id"`
+	ChatIsChannel           bool                     `json:"chat_is_channel"`
+	ChatIsForum             bool                     `json:"chat_is_forum,omitempty"`
+	ChatHasUsername         bool                     `json:"chat_has_username,omitempty"`
+	ChatIsCreated           bool                     `json:"chat_is_created,omitempty"`
+	UserAdministratorRights *ChatAdministratorRights `json:"user_administrator_rights,omitempty"`
+	BotAdministratorRights  *ChatAdministratorRights `json:"bot_administrator_rights,omitempty"`
+	BotIsMember             bool                     `json:"bot_is_member,omitempty"`
 }
 
 // KeyboardButtonPollType https://core.telegram.org/bots/api#keyboardbuttonpolltype
@@ -52,13 +74,13 @@ type KeyboardButtonPollType struct {
 }
 
 type CallbackGame struct {
-	UserID             int  `json:"user_id"`
-	Score              int  `json:"score"`
-	Force              bool `json:"force,omitempty"`
-	DisableEditMessage bool `json:"disable_edit_message,omitempty"`
-	ChatID             int  `json:"chat_id,omitempty"`
-	MessageID          int  `json:"message_id,omitempty"`
-	InlineMessageID    int  `json:"inline_message_id,omitempty"`
+	UserID             int64 `json:"user_id"`
+	Score              int   `json:"score"`
+	Force              bool  `json:"force,omitempty"`
+	DisableEditMessage bool  `json:"disable_edit_message,omitempty"`
+	ChatID             int   `json:"chat_id,omitempty"`
+	MessageID          int   `json:"message_id,omitempty"`
+	InlineMessageID    int   `json:"inline_message_id,omitempty"`
 }
 
 // ReplyKeyboardRemove https://core.telegram.org/bots/api#replykeyboardremove

@@ -177,7 +177,7 @@ func (b *Bot) SendDice(ctx context.Context, params *SendDiceParams) (*models.Mes
 // SendChatAction https://core.telegram.org/bots/api#sendchataction
 func (b *Bot) SendChatAction(ctx context.Context, params *SendChatActionParams) (bool, error) {
 	var result bool
-	err := b.rawRequest(ctx, "sendDice", params, &result)
+	err := b.rawRequest(ctx, "sendChatAction", params, &result)
 	return result, err
 }
 
@@ -384,6 +384,90 @@ func (b *Bot) SetChatStickerSet(ctx context.Context, params *SetChatStickerSetPa
 	return result, err
 }
 
+// GetForumTopicIconStickers https://core.telegram.org/bots/api#getforumtopiciconstickers
+func (b *Bot) GetForumTopicIconStickers(ctx context.Context) ([]*models.Sticker, error) {
+	var result []*models.Sticker
+	err := b.rawRequest(ctx, "getForumTopicIconStickers", nil, &result)
+	return result, err
+}
+
+// CreateForumTopic https://core.telegram.org/bots/api#createforumtopic
+func (b *Bot) CreateForumTopic(ctx context.Context, params *CreateForumTopicParams) (*models.ForumTopic, error) {
+	result := &models.ForumTopic{}
+	err := b.rawRequest(ctx, "createForumTopic", params, &result)
+	return result, err
+}
+
+// EditForumTopic https://core.telegram.org/bots/api#editforumtopic
+func (b *Bot) EditForumTopic(ctx context.Context, params *EditForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "editForumTopic", params, &result)
+	return result, err
+}
+
+// CloseForumTopic https://core.telegram.org/bots/api#closeforumtopic
+func (b *Bot) CloseForumTopic(ctx context.Context, params *CloseForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "closeForumTopic", params, &result)
+	return result, err
+}
+
+// ReopenForumTopic https://core.telegram.org/bots/api#reopenforumtopic
+func (b *Bot) ReopenForumTopic(ctx context.Context, params *ReopenForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "reopenForumTopic", params, &result)
+	return result, err
+}
+
+// UnpinAllForumTopicMessages https://core.telegram.org/bots/api#deleteforumtopic
+func (b *Bot) UnpinAllForumTopicMessages(ctx context.Context, params *UnpinAllForumTopicMessagesParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "unpinAllForumTopicMessages", params, &result)
+	return result, err
+}
+
+// EditGeneralForumTopic https://core.telegram.org/bots/api#editgeneralforumtopic
+func (b *Bot) EditGeneralForumTopic(ctx context.Context, params *EditGeneralForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "editGeneralForumTopic", params, &result)
+	return result, err
+}
+
+// CloseGeneralForumTopic https://core.telegram.org/bots/api#closegeneralforumtopic
+func (b *Bot) CloseGeneralForumTopic(ctx context.Context, params *CloseGeneralForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "closeGeneralForumTopic", params, &result)
+	return result, err
+}
+
+// ReopenGeneralForumTopic https://core.telegram.org/bots/api#reopengeneralforumtopic
+func (b *Bot) ReopenGeneralForumTopic(ctx context.Context, params *ReopenGeneralForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "reopenGeneralForumTopic", params, &result)
+	return result, err
+}
+
+// HideGeneralForumTopic https://core.telegram.org/bots/api#hidegeneralforumtopic
+func (b *Bot) HideGeneralForumTopic(ctx context.Context, params *HideGeneralForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "hideGeneralForumTopic", params, &result)
+	return result, err
+}
+
+// UnhideGeneralForumTopic https://core.telegram.org/bots/api#unhidegeneralforumtopic
+func (b *Bot) UnhideGeneralForumTopic(ctx context.Context, params *UnhideGeneralForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "unhideGeneralForumTopic", params, &result)
+	return result, err
+}
+
+// DeleteForumTopic https://core.telegram.org/bots/api#unpinallforumtopicmessages
+func (b *Bot) DeleteForumTopic(ctx context.Context, params *DeleteForumTopicParams) (bool, error) {
+	var result bool
+	err := b.rawRequest(ctx, "deleteForumTopic", params, &result)
+	return result, err
+}
+
 // DeleteChatStickerSet https://core.telegram.org/bots/api#deletechatstickerset
 func (b *Bot) DeleteChatStickerSet(ctx context.Context, params *DeleteChatStickerSetParams) (bool, error) {
 	var result bool
@@ -500,6 +584,13 @@ func (b *Bot) SendSticker(ctx context.Context, params *SendStickerParams) (*mode
 func (b *Bot) GetStickerSet(ctx context.Context, params *GetStickerSetParams) (*models.StickerSet, error) {
 	result := &models.StickerSet{}
 	err := b.rawRequest(ctx, "getStickerSet", params, &result)
+	return result, err
+}
+
+// GetCustomEmojiStickers https://core.telegram.org/bots/api#getcustomemojistickers
+func (b *Bot) GetCustomEmojiStickers(ctx context.Context, params *GetCustomEmojiStickersParams) ([]*models.Sticker, error) {
+	var result []*models.Sticker
+	err := b.rawRequest(ctx, "getCustomEmojiStickers", params, &result)
 	return result, err
 }
 
