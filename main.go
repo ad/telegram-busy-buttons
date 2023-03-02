@@ -64,7 +64,12 @@ func main() {
 		bot.WithDefaultHandler(handler),
 	}
 
-	b := bot.New(token, opts...)
+	b, newBotError := bot.New(token, opts...)
+	if newBotError != nil {
+		log.Println("start bot error", newBotError)
+
+		return
+	}
 
 	log.Println("bot started")
 
