@@ -24,8 +24,9 @@ type Config struct {
 }
 
 type CallbackData struct {
-	Command string `json:"c"`
-	User    string `json:"u"`
+	Command string  `json:"c"`
+	User    string  `json:"u,omitempty"`
+	Notify  []int64 `json:"n,omitempty"`
 }
 
 func main() {
@@ -87,13 +88,20 @@ func lookupEnvOrString(key, defaultVal string) string {
 func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
 		cbdMessage := &CallbackData{}
+
+		isNotify := false
+
 		target := ""
 		if strings.HasPrefix(update.CallbackQuery.Data, "free-") || strings.HasPrefix(update.CallbackQuery.Data, "busy-") {
+			isNotify = strings.HasPrefix(update.CallbackQuery.Data, "⚡")
+
 			target = strings.TrimPrefix(strings.TrimPrefix(update.CallbackQuery.Data, "free-"), "busy-")
 		} else {
 			if err := json.Unmarshal([]byte(update.CallbackQuery.Data), cbdMessage); err != nil {
 				log.Printf("error on unmarshal callback data %s\n", err.Error())
 			} else {
+				isNotify = strings.HasPrefix(cbdMessage.Command, "⚡")
+
 				target = strings.TrimPrefix(strings.TrimPrefix(cbdMessage.Command, "free-"), "busy-")
 			}
 		}
@@ -105,7 +113,15 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			update.CallbackQuery.Sender.LastName,
 		)
 
-		log.Printf("update %#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
+		if isNotify {
+			notificationText = fmt.Sprintf(
+				"%s %s requested notifications",
+				update.CallbackQuery.Sender.FirstName,
+				update.CallbackQuery.Sender.LastName,
+			)
+		}
+
+		log.Printf("%#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
 
 		// hide Loading... message and show who pressed button
 		_, _ = b.AnswerCallbackQuery(
@@ -126,6 +142,52 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			case map[string]interface{}:
 				buttons := []models.InlineKeyboardButton{}
 				items := []string{}
+
+				notifyButtonPresent := &CallbackData{}
+				notifyUsers := []int64{}
+				for _, v := range c["inline_keyboard"].([]interface{}) {
+					subitems := v.([]interface{})
+					for _, i := range subitems {
+						callbackData := i.(map[string]interface{})["callback_data"].(string)
+
+						cbd := &CallbackData{}
+
+						if err := json.Unmarshal([]byte(callbackData), cbd); err == nil {
+							if strings.HasPrefix(cbd.Command, "⚡") {
+								notifyButtonPresent = cbd
+								foundInNotify := false
+
+								if cbd.Notify != nil {
+									for _, i := range cbd.Notify {
+										if cbd.Command == cbdMessage.Command {
+											if i != update.CallbackQuery.Sender.ID {
+												notifyUsers = append(notifyUsers, i)
+											} else {
+												foundInNotify = true
+											}
+										} else {
+											notifyUsers = append(notifyUsers, i)
+										}
+									}
+								}
+
+								if cbd.Command == cbdMessage.Command {
+									if !foundInNotify {
+										notifyUsers = append(notifyUsers, update.CallbackQuery.Sender.ID)
+									}
+								}
+
+								cbd.Command = "⚡"
+								cbd.Notify = notifyUsers
+
+								if len(cbd.Notify) > 0 {
+									cbd.Command = fmt.Sprintf("⚡%d", len(cbd.Notify))
+								}
+							}
+						}
+					}
+				}
+
 				for _, v := range c["inline_keyboard"].([]interface{}) {
 					subitems := v.([]interface{})
 					for _, i := range subitems {
@@ -152,41 +214,75 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							}
 						} else {
 							if cbd.Command == cbdMessage.Command {
-								cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+								if !strings.HasPrefix(cbd.Command, "⚡") {
+									cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
-								if strings.HasPrefix(cbd.Command, "busy-") {
-									text = strings.Replace(text, "🟢", "🏗️", 1)
-									cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
-								} else if strings.HasPrefix(cbd.Command, "free-") {
-									text = strings.Replace(text, "🏗️", "🟢", 1)
-									cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
+									if strings.HasPrefix(cbd.Command, "busy-") {
+										text = strings.Replace(text, "🟢", "🏗️", 1)
+										cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
+									} else if strings.HasPrefix(cbd.Command, "free-") {
+										text = strings.Replace(text, "🏗️", "🟢", 1)
+										cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
+									}
 								}
 							}
 						}
 
-						itemText := text
-						if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
-							itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
+						if !strings.HasPrefix(cbd.Command, "⚡") {
+							itemText := text
+							if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
+								itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
+							}
+
+							if !strings.HasPrefix(cbdMessage.Command, "⚡") && len(notifyUsers) > 0 {
+								// notify users
+								for _, userID := range notifyUsers {
+									_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+										ChatID: userID,
+										Text:   fmt.Sprintf("%s status updated", itemText),
+									})
+								}
+							}
+
+							items = append(items, itemText)
+
+							cbdToSend, err := json.Marshal(cbd)
+							if err != nil {
+								log.Printf("%#v, err %s\n", cbd, err)
+
+								return
+							}
+
+							buttons = append(
+								buttons,
+								models.InlineKeyboardButton{
+									CallbackData: string(cbdToSend),
+									Text:         text,
+								},
+							)
 						}
-
-						items = append(items, itemText)
-
-						cbdToSend, err := json.Marshal(cbd)
-						if err != nil {
-							log.Printf("%#v, err %s\n", cbd, err)
-
-							return
-						}
-
-						buttons = append(
-							buttons,
-							models.InlineKeyboardButton{
-								CallbackData: string(cbdToSend),
-								Text:         text,
-							},
-						)
 					}
 				}
+
+				if notifyButtonPresent.Command == "" {
+					notifyButtonPresent.Command = "⚡"
+				}
+
+				cbdToSend, err := json.Marshal(notifyButtonPresent)
+				if err != nil {
+					log.Printf("%#v, err %s\n", notifyButtonPresent, err)
+
+					return
+				}
+
+				buttons = append(
+					buttons,
+					models.InlineKeyboardButton{
+						CallbackData: string(cbdToSend),
+						Text:         notifyButtonPresent.Command,
+					},
+				)
+
 				if len(items) > 0 {
 					messageText = strings.Join(items, "  ")
 				}
@@ -289,6 +385,25 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if len(items) > 0 {
 			messageText = strings.Join(items, "  ")
 		}
+
+		notifyButtonPresent := &CallbackData{
+			Command: "⚡",
+		}
+
+		cbdToSend, err := json.Marshal(notifyButtonPresent)
+		if err != nil {
+			log.Printf("%#v, err %s\n", notifyButtonPresent, err)
+
+			return
+		}
+
+		buttons = append(
+			buttons,
+			models.InlineKeyboardButton{
+				CallbackData: string(cbdToSend),
+				Text:         notifyButtonPresent.Command,
+			},
+		)
 
 		kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
 
