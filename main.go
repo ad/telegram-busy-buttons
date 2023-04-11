@@ -227,10 +227,12 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 									if len(notifyUsers) > 0 {
 										for _, userID := range notifyUsers {
-											_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
-												ChatID: userID,
-												Text:   fmt.Sprintf("%s status updated", text),
-											})
+											if update.CallbackQuery.Sender.ID != userID {
+												_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+													ChatID: userID,
+													Text:   fmt.Sprintf("%s status updated", text),
+												})
+											}
 										}
 									}
 								}
