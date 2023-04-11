@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.7.4 (2023-04-10)
+
+- [BUGFIX] change field `SendPollParams.IsAnonymous` to *bool (#26)
+- add helpers `bot.True()` and `bot.False()` for define *bool values
+
+## v0.7.3 (2023-04-05)
+
+- make `bot.ProcessUpdate` public 
+
+## v0.7.2 (2023-04-03)
+
+- fix copyMessage method (#24)
+
 ## v0.7.1 (2023-03-20)
 
 - fix field name in MenuButtonWebApp #21
