@@ -224,6 +224,15 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 										text = strings.Replace(text, "🏗️", "🟢", 1)
 										cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
 									}
+
+									if len(notifyUsers) > 0 {
+										for _, userID := range notifyUsers {
+											_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+												ChatID: userID,
+												Text:   fmt.Sprintf("%s status updated", text),
+											})
+										}
+									}
 								}
 							}
 						}
@@ -232,16 +241,6 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							itemText := text
 							if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
 								itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
-							}
-
-							if !strings.HasPrefix(cbdMessage.Command, "⚡") && len(notifyUsers) > 0 {
-								// notify users
-								for _, userID := range notifyUsers {
-									_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
-										ChatID: userID,
-										Text:   fmt.Sprintf("%s status updated", itemText),
-									})
-								}
 							}
 
 							items = append(items, itemText)
