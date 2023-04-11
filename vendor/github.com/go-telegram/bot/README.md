@@ -120,6 +120,16 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 [Demo in examples](examples/echo_with_webhook/main.go)
 
+Also, you can manually process updates with `bot.ProcessUpdate` method.
+
+```go
+update := models.Update{}
+
+json.NewDecoder(req.Body).Decode(&update)
+
+b.ProcessUpdate(ctx, &update)
+```
+
 ## Middlewares
 
 You can use middlewares with `WithMiddlewares(middlewares ...Middleware)` option.
@@ -297,6 +307,21 @@ Escape only unescaped special symbols for Telegram MarkdownV2 syntax
 ### `RandomString(n int) string`
 
 Returns fast random a-zA-Z string with n length
+
+### `True() bool`, `False() bool`
+
+Allows you to define *bool values for params, which require `*bool`, like `SendPoolParams`
+
+```go
+p := &bot.SendPollParams{
+    ChatID: chatID,
+    Question: "Question",
+    Options: []string{"Option 1", "Option 2"},
+    IsAnonymous: bot.False(),
+}
+
+b.SendPool(ctx, p)
+```
 
 ## UI Components
 
