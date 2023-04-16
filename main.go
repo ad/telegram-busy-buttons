@@ -234,7 +234,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 											if update.CallbackQuery.Sender.ID != userID {
 												_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 													ChatID: userID,
-													Text:   fmt.Sprintf("%s status updated", text),
+													Text:   fmt.Sprintf("%s status updated by %s", text, cbd.User),
 												})
 											}
 										}
@@ -361,32 +361,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 				},
 			)
 		}
-		// old style
-		// for _, v := range parts[1:] {
-		// 	text := "🟢 " + v
-		// 	callbackData := CallbackData{
-		// 		Command: "busy-" + v,
-		// 	}
 
-		// 	cbd, err := json.Marshal(callbackData)
-		// 	if err != nil {
-		// 		b.SendMessage(ctx, &bot.SendMessageParams{
-		// 			ChatID: update.Message.Chat.ID,
-		// 			Text:   "Failed to create buttons",
-		// 		})
-
-		// 		return
-		// 	}
-
-		// 	items = append(items, text)
-		// 	buttons = append(
-		// 		buttons,
-		// 		models.InlineKeyboardButton{
-		// 			CallbackData: string(cbd),
-		// 			Text:         text,
-		// 		},
-		// 	)
-		// }
 		if len(items) > 0 {
 			messageText = strings.Join(items, "  ")
 		}
