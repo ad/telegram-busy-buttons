@@ -1,11 +1,15 @@
 package models
 
-type ReplyMarkup any
+type ReplyMarkup interface {
+	replyMarkupTag()
+}
 
 // InlineKeyboardMarkup https://core.telegram.org/bots/api#inlinekeyboardmarkup
 type InlineKeyboardMarkup struct {
 	InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
 }
+
+func (InlineKeyboardMarkup) replyMarkupTag() {}
 
 // LoginURL https://core.telegram.org/bots/api#loginurl
 type LoginURL struct {
@@ -15,17 +19,27 @@ type LoginURL struct {
 	RequestWriteAccess bool   `json:"request_write_access,omitempty"`
 }
 
+// SwitchInlineQueryChosenChat https://core.telegram.org/bots/api#switchinlinequerychosenchat
+type SwitchInlineQueryChosenChat struct {
+	Query             string `json:"query,omitempty"`
+	AllowUserChats    bool   `json:"allow_user_chats,omitempty"`
+	AllowBotChats     bool   `json:"allow_bot_chats,omitempty"`
+	AllowGroupChats   bool   `json:"allow_group_chats,omitempty"`
+	AllowChannelChats bool   `json:"allow_channel_chats,omitempty"`
+}
+
 // InlineKeyboardButton https://core.telegram.org/bots/api#inlinekeyboardbutton
 type InlineKeyboardButton struct {
-	Text                         string        `json:"text"`
-	URL                          string        `json:"url,omitempty"`
-	CallbackData                 string        `json:"callback_data,omitempty"`
-	WebApp                       *WebAppInfo   `json:"web_app,omitempty"`
-	LoginURL                     *LoginURL     `json:"login_url,omitempty"`
-	SwitchInlineQuery            string        `json:"switch_inline_query,omitempty"`
-	SwitchInlineQueryCurrentChat string        `json:"switch_inline_query_current_chat,omitempty"`
-	CallbackGame                 *CallbackGame `json:"callback_game,omitempty"`
-	Pay                          bool          `json:"pay,omitempty"`
+	Text                         string                       `json:"text"`
+	URL                          string                       `json:"url,omitempty"`
+	CallbackData                 string                       `json:"callback_data,omitempty"`
+	WebApp                       *WebAppInfo                  `json:"web_app,omitempty"`
+	LoginURL                     *LoginURL                    `json:"login_url,omitempty"`
+	SwitchInlineQuery            string                       `json:"switch_inline_query,omitempty"`
+	SwitchInlineQueryCurrentChat string                       `json:"switch_inline_query_current_chat,omitempty"`
+	SwitchInlineQueryChosenChat  *SwitchInlineQueryChosenChat `json:"switch_inline_query_chosen_chat,omitempty"`
+	CallbackGame                 *CallbackGame                `json:"callback_game,omitempty"`
+	Pay                          bool                         `json:"pay,omitempty"`
 }
 
 // ReplyKeyboardMarkup https://core.telegram.org/bots/api#replykeyboardmarkup
@@ -37,6 +51,8 @@ type ReplyKeyboardMarkup struct {
 	InputFieldPlaceholder string             `json:"input_field_placeholder,omitempty"`
 	Selective             bool               `json:"selective,omitempty"`
 }
+
+func (ReplyKeyboardMarkup) replyMarkupTag() {}
 
 // KeyboardButton https://core.telegram.org/bots/api#keyboardbutton
 type KeyboardButton struct {
@@ -89,9 +105,13 @@ type ReplyKeyboardRemove struct {
 	Selective      bool `json:"selective,omitempty"`
 }
 
+func (ReplyKeyboardRemove) replyMarkupTag() {}
+
 // ForceReply https://core.telegram.org/bots/api#forcereply
 type ForceReply struct {
 	ForceReply            bool   `json:"force_reply"`
 	InputFieldPlaceholder string `json:"input_field_placeholder,omitempty"`
 	Selective             bool   `json:"selective,omitempty"`
 }
+
+func (ForceReply) replyMarkupTag() {}
