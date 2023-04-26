@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	"golang.org/x/exp/slices"
 )
 
 const ConfigFileName = "/data/options.json"
@@ -89,18 +90,23 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 	if update.CallbackQuery != nil {
 		cbdMessage := &CallbackData{}
 
-		isNotify := false
+		isNotifyPressed := false
+		setNotify := false
 
 		target := ""
 		if strings.HasPrefix(update.CallbackQuery.Data, "free-") || strings.HasPrefix(update.CallbackQuery.Data, "busy-") {
-			isNotify = strings.HasPrefix(update.CallbackQuery.Data, "⚡")
+			isNotifyPressed = strings.HasPrefix(update.CallbackQuery.Data, "⚡")
 
 			target = strings.TrimPrefix(strings.TrimPrefix(update.CallbackQuery.Data, "free-"), "busy-")
 		} else {
 			if err := json.Unmarshal([]byte(update.CallbackQuery.Data), cbdMessage); err != nil {
 				log.Printf("error on unmarshal callback data %s\n", err.Error())
 			} else {
-				isNotify = strings.HasPrefix(cbdMessage.Command, "⚡")
+				isNotifyPressed = strings.HasPrefix(cbdMessage.Command, "⚡")
+
+				if slices.Contains(cbdMessage.Notify, update.CallbackQuery.Sender.ID) {
+					setNotify = true
+				}
 
 				target = strings.TrimPrefix(strings.TrimPrefix(cbdMessage.Command, "free-"), "busy-")
 			}
@@ -113,11 +119,16 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			update.CallbackQuery.Sender.LastName,
 		)
 
-		if isNotify {
+		if isNotifyPressed {
+			notifyState := "disabled"
+			if setNotify {
+				notifyState = "enabled"
+			}
 			notificationText = fmt.Sprintf(
-				"%s %s requested notifications",
+				"%s %s %s notifications",
 				update.CallbackQuery.Sender.FirstName,
 				update.CallbackQuery.Sender.LastName,
+				notifyState,
 			)
 		}
 
@@ -137,164 +148,157 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		}
 
 		messageText := update.CallbackQuery.Message.Text
-		if update.CallbackQuery.Message.ReplyMarkup != nil {
-			switch c := update.CallbackQuery.Message.ReplyMarkup.(type) {
-			case map[string]interface{}:
-				buttons := []models.InlineKeyboardButton{}
-				items := []string{}
+		if update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard != nil {
+			buttons := []models.InlineKeyboardButton{}
+			items := []string{}
 
-				notifyButtonPresent := &CallbackData{}
-				notifyUsers := []int64{}
-				for _, v := range c["inline_keyboard"].([]interface{}) {
-					subitems := v.([]interface{})
-					for _, i := range subitems {
-						callbackData := i.(map[string]interface{})["callback_data"].(string)
+			notifyButtonPresent := &CallbackData{}
+			notifyUsers := []int64{}
+			for _, subitems := range update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard {
+				for _, subitem := range subitems {
+					callbackData := subitem.CallbackData
 
-						cbd := &CallbackData{}
+					cbd := &CallbackData{}
 
-						if err := json.Unmarshal([]byte(callbackData), cbd); err == nil {
-							if strings.HasPrefix(cbd.Command, "⚡") {
-								notifyButtonPresent = cbd
-								foundInNotify := false
+					if err := json.Unmarshal([]byte(callbackData), cbd); err == nil {
+						if strings.HasPrefix(cbd.Command, "⚡") {
+							notifyButtonPresent = cbd
+							foundInNotify := false
 
-								if cbd.Notify != nil {
-									for _, i := range cbd.Notify {
-										if cbd.Command == cbdMessage.Command {
-											if i != update.CallbackQuery.Sender.ID {
-												notifyUsers = append(notifyUsers, i)
-											} else {
-												foundInNotify = true
-											}
-										} else {
+							if cbd.Notify != nil {
+								for _, i := range cbd.Notify {
+									if cbd.Command == cbdMessage.Command {
+										if i != update.CallbackQuery.Sender.ID {
 											notifyUsers = append(notifyUsers, i)
+										} else {
+											foundInNotify = true
 										}
+									} else {
+										notifyUsers = append(notifyUsers, i)
 									}
 								}
+							}
 
-								if cbd.Command == cbdMessage.Command {
-									if !foundInNotify {
-										notifyUsers = append(notifyUsers, update.CallbackQuery.Sender.ID)
-									}
+							if cbd.Command == cbdMessage.Command {
+								if !foundInNotify {
+									notifyUsers = append(notifyUsers, update.CallbackQuery.Sender.ID)
 								}
+							}
 
-								cbd.Command = "⚡"
-								cbd.Notify = notifyUsers
+							cbd.Command = "⚡"
+							cbd.Notify = notifyUsers
 
-								if len(cbd.Notify) > 0 {
-									cbd.Command = fmt.Sprintf("⚡%d", len(cbd.Notify))
-								}
+							if len(cbd.Notify) > 0 {
+								cbd.Command = fmt.Sprintf("⚡%d", len(cbd.Notify))
 							}
 						}
 					}
 				}
+			}
 
-				for _, v := range c["inline_keyboard"].([]interface{}) {
-					subitems := v.([]interface{})
-					for _, i := range subitems {
-						// fmt.Printf("%#v\n", i.(map[string]interface{}))
-						callbackData := i.(map[string]interface{})["callback_data"].(string)
-						text := i.(map[string]interface{})["text"].(string)
+			for _, subitems := range update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard {
+				for _, subitem := range subitems {
+					callbackData := subitem.CallbackData
+					// fmt.Printf("%#v\n", i.(map[string]interface{}))
+					text := subitem.Text
 
-						cbd := &CallbackData{}
+					cbd := &CallbackData{}
 
-						if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
-							log.Printf("error on unmarshal callback data %s\n", err.Error())
-							if callbackData == update.CallbackQuery.Data {
-								cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+					if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
+						log.Printf("error on unmarshal callback data %s\n", err.Error())
+						if callbackData == update.CallbackQuery.Data {
+							cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
-								if strings.HasPrefix(callbackData, "busy-") {
-									text = strings.Replace(text, "🟢 ", "🟢", 1)
-									text = strings.Replace(text, "🟢", "🏗️", 1)
-									cbd.Command = strings.Replace(callbackData, "busy-", "free-", 1)
-								} else if strings.HasPrefix(callbackData, "free-") {
-									text = strings.Replace(text, "🏗️ ", "🏗️", 1)
-									text = strings.Replace(text, "🏗️", "🟢", 1)
-									cbd.Command = strings.Replace(callbackData, "free-", "busy-", 1)
-								}
-							} else {
-								cbd.Command = callbackData
+							if strings.HasPrefix(callbackData, "busy-") {
+								text = strings.Replace(text, "🟢 ", "🟢", 1)
+								text = strings.Replace(text, "🟢", "🏗️", 1)
+								cbd.Command = strings.Replace(callbackData, "busy-", "free-", 1)
+							} else if strings.HasPrefix(callbackData, "free-") {
+								text = strings.Replace(text, "🏗️ ", "🏗️", 1)
+								text = strings.Replace(text, "🏗️", "🟢", 1)
+								cbd.Command = strings.Replace(callbackData, "free-", "busy-", 1)
 							}
 						} else {
-							if cbd.Command == cbdMessage.Command {
-								if !strings.HasPrefix(cbd.Command, "⚡") {
-									cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+							cbd.Command = callbackData
+						}
+					} else {
+						if cbd.Command == cbdMessage.Command {
+							if !strings.HasPrefix(cbd.Command, "⚡") {
+								cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
 
-									if strings.HasPrefix(cbd.Command, "busy-") {
-										text = strings.Replace(text, "🟢 ", "🟢", 1)
-										text = strings.Replace(text, "🟢", "🏗️", 1)
-										cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
-									} else if strings.HasPrefix(cbd.Command, "free-") {
-										text = strings.Replace(text, "🏗️ ", "🏗️", 1)
-										text = strings.Replace(text, "🏗️", "🟢", 1)
-										cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
-									}
+								if strings.HasPrefix(cbd.Command, "busy-") {
+									text = strings.Replace(text, "🟢 ", "🟢", 1)
+									text = strings.Replace(text, "🟢", "🏗️", 1)
+									cbd.Command = strings.Replace(cbd.Command, "busy-", "free-", 1)
+								} else if strings.HasPrefix(cbd.Command, "free-") {
+									text = strings.Replace(text, "🏗️ ", "🏗️", 1)
+									text = strings.Replace(text, "🏗️", "🟢", 1)
+									cbd.Command = strings.Replace(cbd.Command, "free-", "busy-", 1)
+								}
 
-									if len(notifyUsers) > 0 {
-										for _, userID := range notifyUsers {
-											if update.CallbackQuery.Sender.ID != userID {
-												_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
-													ChatID: userID,
-													Text:   fmt.Sprintf("%s status updated by %s", text, cbd.User),
-												})
-											}
+								if len(notifyUsers) > 0 {
+									for _, userID := range notifyUsers {
+										if update.CallbackQuery.Sender.ID != userID {
+											_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
+												ChatID: userID,
+												Text:   fmt.Sprintf("%s status updated by %s", text, cbd.User),
+											})
 										}
 									}
 								}
 							}
 						}
+					}
 
-						if !strings.HasPrefix(cbd.Command, "⚡") {
-							itemText := text
-							if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
-								itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
-							}
-
-							items = append(items, itemText)
-
-							cbdToSend, err := json.Marshal(cbd)
-							if err != nil {
-								log.Printf("%#v, err %s\n", cbd, err)
-
-								return
-							}
-
-							buttons = append(
-								buttons,
-								models.InlineKeyboardButton{
-									CallbackData: string(cbdToSend),
-									Text:         text,
-								},
-							)
+					if !strings.HasPrefix(cbd.Command, "⚡") {
+						itemText := text
+						if strings.HasPrefix(cbd.Command, "free-") && cbd.User != "" {
+							itemText = fmt.Sprintf("%s (%s)", text, cbd.User)
 						}
+
+						items = append(items, itemText)
+
+						cbdToSend, err := json.Marshal(cbd)
+						if err != nil {
+							log.Printf("%#v, err %s\n", cbd, err)
+
+							return
+						}
+
+						buttons = append(
+							buttons,
+							models.InlineKeyboardButton{
+								CallbackData: string(cbdToSend),
+								Text:         text,
+							},
+						)
 					}
 				}
+			}
 
-				if len(items) > 0 {
-					messageText = strings.Join(items, "  ")
-				}
+			if len(items) > 0 {
+				messageText = strings.Join(items, "  ")
+			}
 
-				kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
+			kb.InlineKeyboard = [][]models.InlineKeyboardButton{buttons}
 
-				if notifyButtonPresent.Command == "" {
-					notifyButtonPresent.Command = "⚡"
-				}
+			if notifyButtonPresent.Command == "" {
+				notifyButtonPresent.Command = "⚡"
+			}
 
-				cbdToSend, err := json.Marshal(notifyButtonPresent)
-				if err == nil {
-					kb.InlineKeyboard = append(
-						kb.InlineKeyboard,
-						[]models.InlineKeyboardButton{
-							{
-								CallbackData: string(cbdToSend),
-								Text:         notifyButtonPresent.Command,
-							},
+			cbdToSend, err := json.Marshal(notifyButtonPresent)
+			if err == nil {
+				kb.InlineKeyboard = append(
+					kb.InlineKeyboard,
+					[]models.InlineKeyboardButton{
+						{
+							CallbackData: string(cbdToSend),
+							Text:         notifyButtonPresent.Command,
 						},
-					)
-				} else {
-					log.Printf("%#v, err %s\n", notifyButtonPresent, err)
-				}
-			default:
-				// fmt.Printf("N%T\n", c)
+					},
+				)
+			} else {
+				log.Printf("%#v, err %s\n", notifyButtonPresent, err)
 			}
 		}
 
