@@ -430,7 +430,11 @@ func minifyJson(input []byte) string {
 	w := &bytes.Buffer{}
 
 	m := jsonminifier.Minifier{KeepNumbers: true}
-	m.Minify(nil, w, r, nil)
+
+	errMinify := m.Minify(nil, w, r, nil)
+	if errMinify != nil {
+		return string(input)
+	}
 
 	return w.String()
 }
