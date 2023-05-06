@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
+	jsonminifier "github.com/tdewolff/minify/v2/json"
 	"golang.org/x/exp/slices"
 )
 
@@ -268,7 +270,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 						buttons = append(
 							buttons,
 							models.InlineKeyboardButton{
-								CallbackData: string(cbdToSend),
+								CallbackData: minifyJson(cbdToSend),
 								Text:         text,
 							},
 						)
@@ -292,7 +294,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 					kb.InlineKeyboard,
 					[]models.InlineKeyboardButton{
 						{
-							CallbackData: string(cbdToSend),
+							CallbackData: minifyJson(cbdToSend),
 							Text:         notifyButtonPresent.Command,
 						},
 					},
@@ -360,7 +362,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			buttons = append(
 				buttons,
 				models.InlineKeyboardButton{
-					CallbackData: string(cbd),
+					CallbackData: minifyJson(cbd),
 					Text:         text,
 				},
 			)
@@ -384,7 +386,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		buttons = append(
 			buttons,
 			models.InlineKeyboardButton{
-				CallbackData: string(cbdToSend),
+				CallbackData: minifyJson(cbdToSend),
 				Text:         notifyButtonPresent.Command,
 			},
 		)
@@ -399,6 +401,16 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		return
 	}
+}
+
+func minifyJson(input []byte) string {
+	r := bytes.NewBufferString(string(input))
+	w := &bytes.Buffer{}
+
+	m := jsonminifier.Minifier{KeepNumbers: true}
+	m.Minify(nil, w, r, nil)
+
+	return w.String()
 }
 
 // shorten text on button to limit 64 chars

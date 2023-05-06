@@ -1,6 +1,126 @@
 package main
 
-import "testing"
+import (
+	"context"
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
+)
+
+type serverMock struct {
+	s          *httptest.Server
+	custom     map[string]any
+	hooks      map[string]func(body []byte) any
+	hooksCalls map[string]int
+	updateIdx  int
+	updates    []*models.Update
+}
+
+func (s *serverMock) Close() {
+	s.s.Close()
+}
+
+func (s *serverMock) URL() string {
+	return s.s.URL
+}
+
+type getUpdatesResponse struct {
+	OK     bool             `json:"ok"`
+	Result []*models.Update `json:"result"`
+}
+
+func (s *serverMock) handler(rw http.ResponseWriter, req *http.Request) {
+	if req.URL.String() == "/bot/getMe" {
+		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	if req.URL.String() == "/bot/getUpdates" {
+		s.handlerGetUpdates(rw)
+		return
+	}
+
+	reqBody, errReadBody := io.ReadAll(req.Body)
+	if errReadBody != nil {
+		panic(errReadBody)
+	}
+	defer req.Body.Close()
+
+	hook, okHook := s.hooks[req.URL.String()]
+	if okHook {
+		s.hooksCalls[req.URL.String()]++
+		resp, errData := json.Marshal(hook(reqBody))
+		if errData != nil {
+			panic(errData)
+		}
+		_, err := rw.Write(resp)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	d, ok := s.custom[req.URL.String()]
+	if !ok {
+		panic("answer not found for request: " + req.URL.String())
+	}
+
+	resp, errData := json.Marshal(d)
+	if errData != nil {
+		panic(errData)
+	}
+	_, err := rw.Write(resp)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s *serverMock) handlerGetUpdates(rw http.ResponseWriter) {
+	if s.updateIdx >= len(s.updates) {
+		_, err := rw.Write([]byte(`{"ok":true,"result":[]}`))
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	s.updates[s.updateIdx].ID = int64(s.updateIdx + 1)
+
+	r := getUpdatesResponse{
+		OK:     true,
+		Result: []*models.Update{s.updates[s.updateIdx]},
+	}
+
+	s.updateIdx++
+
+	d, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	_, err = rw.Write(d)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func newServerMock() *serverMock {
+	s := &serverMock{
+		custom:     map[string]any{},
+		hooks:      map[string]func([]byte) any{},
+		hooksCalls: map[string]int{},
+	}
+
+	s.s = httptest.NewServer(http.HandlerFunc(s.handler))
+
+	return s
+}
 
 func Test_shortenButtonText(t *testing.T) {
 	type args struct {
@@ -93,6 +213,104 @@ func Test_shortenButtonText(t *testing.T) {
 			if got != tt.want {
 				t.Errorf("shortenUsername(%s, %s, %s) = %v, want %v", tt.args.command, tt.args.name, tt.args.lastname, got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_handler(t *testing.T) {
+	s := newServerMock()
+	defer s.Close()
+
+	b, err := bot.New("", bot.WithServerURL(s.URL()))
+	if err != nil {
+		t.Fatalf("unexpected error %q", err)
+	}
+
+	type args struct {
+		ctx    context.Context
+		b      *bot.Bot
+		update *models.Update
+	}
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "string",
+			args: args{
+				ctx: context.Background(),
+				b:   b,
+				update: &models.Update{
+					CallbackQuery: &models.CallbackQuery{
+						Data: "free-test",
+						Message: &models.Message{
+							Chat: models.Chat{
+								ID: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "json",
+			args: args{
+				ctx: context.Background(),
+				b:   b,
+				update: &models.Update{
+					CallbackQuery: &models.CallbackQuery{
+						Data: `{"c": "free-test"}`,
+						Message: &models.Message{
+							Chat: models.Chat{
+								ID: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "json notify",
+			args: args{
+				ctx: context.Background(),
+				b:   b,
+				update: &models.Update{
+					CallbackQuery: &models.CallbackQuery{
+						Data: `{"c": "⚡", "n": [1]}`,
+						Message: &models.Message{
+							Chat: models.Chat{
+								ID: 1,
+							},
+						},
+						Sender: models.User{
+							ID: 1,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "bad json",
+			args: args{
+				ctx: context.Background(),
+				b:   b,
+				update: &models.Update{
+					CallbackQuery: &models.CallbackQuery{
+						Data: `{"c": "free-test"`,
+						Message: &models.Message{
+							Chat: models.Chat{
+								ID: 1,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			handler(tt.args.ctx, tt.args.b, tt.args.update)
 		})
 	}
 }
