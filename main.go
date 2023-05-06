@@ -137,15 +137,6 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		log.Printf("%#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
 
-		// hide Loading... message and show who pressed button
-		_, _ = b.AnswerCallbackQuery(
-			ctx,
-			&bot.AnswerCallbackQueryParams{
-				CallbackQueryID: update.CallbackQuery.ID,
-				Text:            notificationText,
-			},
-		)
-
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{},
 		}
@@ -270,6 +261,10 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 						minified := minifyJson(cbdToSend)
 						if !checkStringLimit(minified, 64) {
+							log.Printf("error: callback_data too long. %s\n", cbdToSend)
+
+							showFlashMessage(ctx, b, update.CallbackQuery.ID, "sorry, you cant't do that now")
+
 							return
 						}
 
@@ -298,6 +293,10 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			if err == nil {
 				minified := minifyJson(cbdToSend)
 				if !checkStringLimit(minified, 64) {
+					log.Printf("error: callback_data too long. %s\n", cbdToSend)
+
+					showFlashMessage(ctx, b, update.CallbackQuery.ID, "sorry, you cant't do that now")
+
 					return
 				}
 
@@ -326,6 +325,9 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		if err != nil {
 			log.Printf("error on edit message %s, %#v %#v\n", err.Error(), editedMessage, editedMessage.ReplyMarkup)
 		}
+
+		// hide Loading... message and show who pressed button
+		showFlashMessage(ctx, b, update.CallbackQuery.ID, notificationText)
 
 		return
 	}
@@ -373,6 +375,10 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 			minified := minifyJson(cbd)
 			if !checkStringLimit(minified, 64) {
+				log.Printf("error: callback_data too long. %s\n", cbd)
+
+				showFlashMessage(ctx, b, update.CallbackQuery.ID, "sorry, you cant't do that now")
+
 				return
 			}
 
@@ -402,6 +408,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 		minified := minifyJson(cbdToSend)
 		if !checkStringLimit(minified, 64) {
+			log.Printf("error: callback_data too long. %s\n", cbdToSend)
+
 			return
 		}
 
@@ -420,9 +428,18 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			Text:        messageText,
 			ReplyMarkup: kb,
 		})
-
-		return
 	}
+}
+
+func showFlashMessage(ctx context.Context, b *bot.Bot, callbackQueryID, text string) {
+	// hide Loading... message and show who pressed button
+	_, _ = b.AnswerCallbackQuery(
+		ctx,
+		&bot.AnswerCallbackQueryParams{
+			CallbackQueryID: callbackQueryID,
+			Text:            text,
+		},
+	)
 }
 
 func minifyJson(input []byte) string {
