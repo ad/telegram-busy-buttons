@@ -350,7 +350,7 @@ func Test_minifyJson(t *testing.T) {
 			args: args{
 				input: []byte(`{"c": "c"`),
 			},
-			want: `{"c":"c"`,
+			want: `{"c": "c"`,
 		},
 	}
 	for _, tt := range tests {
