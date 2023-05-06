@@ -42,6 +42,20 @@ func (s *serverMock) handler(rw http.ResponseWriter, req *http.Request) {
 		}
 		return
 	}
+	if req.URL.String() == "/bot/editMessageText" {
+		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	if req.URL.String() == "/bot/answerCallbackQuery" {
+		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
 	if req.URL.String() == "/bot/getUpdates" {
 		s.handlerGetUpdates(rw)
 		return
@@ -311,6 +325,75 @@ func Test_handler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			handler(tt.args.ctx, tt.args.b, tt.args.update)
+		})
+	}
+}
+
+func Test_minifyJson(t *testing.T) {
+	type args struct {
+		input []byte
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{
+			name: "good json",
+			args: args{
+				input: []byte(`{"c": "c"}`),
+			},
+			want: `{"c":"c"}`,
+		},
+		{
+			name: "bad json",
+			args: args{
+				input: []byte(`{"c": "c"`),
+			},
+			want: `{"c":"c"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := minifyJson(tt.args.input); got != tt.want {
+				t.Errorf("minifyJson() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_checkStringLimit(t *testing.T) {
+	type args struct {
+		input string
+		limit int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "63",
+			args: args{
+				input: "0123456789 0123456789 0123456789 0123456789 0123456789 01234567",
+				limit: 64,
+			},
+			want: true,
+		},
+		{
+			name: "65",
+			args: args{
+				input: "0123456789 0123456789 0123456789 0123456789 0123456789 0123456789",
+				limit: 64,
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := checkStringLimit(tt.args.input, tt.args.limit); got != tt.want {
+				t.Errorf("checkStringLimit() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

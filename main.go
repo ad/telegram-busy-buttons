@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/go-telegram/bot"
 	"github.com/go-telegram/bot/models"
@@ -267,10 +268,15 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							return
 						}
 
+						minified := minifyJson(cbdToSend)
+						if !checkStringLimit(minified, 64) {
+							return
+						}
+
 						buttons = append(
 							buttons,
 							models.InlineKeyboardButton{
-								CallbackData: minifyJson(cbdToSend),
+								CallbackData: minified,
 								Text:         text,
 							},
 						)
@@ -290,11 +296,16 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 			cbdToSend, err := json.Marshal(notifyButtonPresent)
 			if err == nil {
+				minified := minifyJson(cbdToSend)
+				if !checkStringLimit(minified, 64) {
+					return
+				}
+
 				kb.InlineKeyboard = append(
 					kb.InlineKeyboard,
 					[]models.InlineKeyboardButton{
 						{
-							CallbackData: minifyJson(cbdToSend),
+							CallbackData: minified,
 							Text:         notifyButtonPresent.Command,
 						},
 					},
@@ -359,10 +370,16 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			}
 
 			items = append(items, text)
+
+			minified := minifyJson(cbd)
+			if !checkStringLimit(minified, 64) {
+				return
+			}
+
 			buttons = append(
 				buttons,
 				models.InlineKeyboardButton{
-					CallbackData: minifyJson(cbd),
+					CallbackData: minified,
 					Text:         text,
 				},
 			)
@@ -383,10 +400,15 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			return
 		}
 
+		minified := minifyJson(cbdToSend)
+		if !checkStringLimit(minified, 64) {
+			return
+		}
+
 		buttons = append(
 			buttons,
 			models.InlineKeyboardButton{
-				CallbackData: minifyJson(cbdToSend),
+				CallbackData: minified,
 				Text:         notifyButtonPresent.Command,
 			},
 		)
@@ -411,6 +433,10 @@ func minifyJson(input []byte) string {
 	m.Minify(nil, w, r, nil)
 
 	return w.String()
+}
+
+func checkStringLimit(input string, limit int) bool {
+	return utf8.RuneCountInString(input) <= limit
 }
 
 // shorten text on button to limit 64 chars
