@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.7.10 (2023-05-22)
+
+- add ChatAction type with consts for `sendChatAction` method
+
+## v0.7.9 (2023-05-16)
+
+- add option `WithSkipGetMe()`
+
 ## v0.7.8 (2023-04-26)
 
 - [BUGFIX] fix type of field `Message.ReplyMarkup` (#30)
