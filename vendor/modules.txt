@@ -1,4 +1,4 @@
-# github.com/go-telegram/bot v0.7.11
+# github.com/go-telegram/bot v0.7.12
 ## explicit; go 1.18
 github.com/go-telegram/bot
 github.com/go-telegram/bot/models
@@ -12,7 +12,7 @@ github.com/tdewolff/parse/v2
 github.com/tdewolff/parse/v2/buffer
 github.com/tdewolff/parse/v2/json
 github.com/tdewolff/parse/v2/strconv
-# golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
+# golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 ## explicit; go 1.20
 golang.org/x/exp/constraints
 golang.org/x/exp/slices

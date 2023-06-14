@@ -235,7 +235,7 @@ func Test_handler(t *testing.T) {
 	s := newServerMock()
 	defer s.Close()
 
-	b, err := bot.New("", bot.WithServerURL(s.URL()))
+	b, err := bot.New("test_token", bot.WithServerURL(s.URL()), bot.WithSkipGetMe())
 	if err != nil {
 		t.Fatalf("unexpected error %q", err)
 	}
