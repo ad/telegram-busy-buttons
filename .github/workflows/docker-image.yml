@@ -10,7 +10,7 @@ on:
       - v*
 
 env:
-  DOCKER_IMAGE_NAME: domru
+  DOCKER_IMAGE_NAME: telegram-busy-buttons
   DOCKER_IMAGE_TAG: latest
   GO_VERSION: '1.20'
 
