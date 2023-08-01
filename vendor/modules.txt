@@ -2,11 +2,11 @@
 ## explicit; go 1.18
 github.com/go-telegram/bot
 github.com/go-telegram/bot/models
-# github.com/tdewolff/minify/v2 v2.12.7
-## explicit; go 1.13
+# github.com/tdewolff/minify/v2 v2.12.8
+## explicit; go 1.18
 github.com/tdewolff/minify/v2
 github.com/tdewolff/minify/v2/json
-# github.com/tdewolff/parse/v2 v2.6.6
+# github.com/tdewolff/parse/v2 v2.6.7
 ## explicit; go 1.13
 github.com/tdewolff/parse/v2
 github.com/tdewolff/parse/v2/buffer
