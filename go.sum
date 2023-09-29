@@ -1,5 +1,5 @@
-github.com/go-telegram/bot v0.7.12 h1:t8qibuQiCCyRyhltI+0rqSI8/lX9NkShv0xSpwszLfg=
-github.com/go-telegram/bot v0.7.12/go.mod h1:i2TRs7fXWIeaceF3z7KzsMt/he0TwkVC680mvdTFYeM=
+github.com/go-telegram/bot v0.8.0 h1:LQZwaU5eqfXzeUIqDBOLrk6/Lu26zqwnBs5BOKQl7fU=
+github.com/go-telegram/bot v0.8.0/go.mod h1:i2TRs7fXWIeaceF3z7KzsMt/he0TwkVC680mvdTFYeM=
 github.com/tdewolff/minify/v2 v2.12.9 h1:dvn5MtmuQ/DFMwqf5j8QhEVpPX6fi3WGImhv8RUB4zA=
 github.com/tdewolff/minify/v2 v2.12.9/go.mod h1:qOqdlDfL+7v0/fyymB+OP497nIxJYSvX4MQWA8OoiXU=
 github.com/tdewolff/parse/v2 v2.6.8 h1:mhNZXYCx//xG7Yq2e/kVLNZw4YfYmeHbhx+Zc0OvFMA=
