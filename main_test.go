@@ -208,7 +208,7 @@ func Test_shortenButtonText(t *testing.T) {
 				name:     "ИмяОтчество",
 				lastname: "Фамилия",
 			},
-			want: "ИмяОтчество Ф.",
+			want: "UmяOтчecтвo Фamuлuя",
 		},
 		{
 			name: "long cyrrilic name",
@@ -217,7 +217,7 @@ func Test_shortenButtonText(t *testing.T) {
 				name:     "ИмяОтчество12345678901234567890123123123123123123123123123131231223131231231231312312123123123123123123123",
 				lastname: "Фамилия",
 			},
-			want: "ИмяОтчество123456789012345678901",
+			want: "UmяOтчecтвo123456789012345678901",
 		},
 	}
 	for _, tt := range tests {

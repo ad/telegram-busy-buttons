@@ -464,6 +464,9 @@ func checkStringLimit(input string, limit int) bool {
 func shortenUsername(command, name, lastname string) string {
 	// 18 chars is allocated to struct {"c": "", "u": ""}
 
+	name = toLatin(name)
+	lastname = toLatin(lastname)
+
 	limit := 64 - 18 - len(command)
 
 	if limit <= 0 {
