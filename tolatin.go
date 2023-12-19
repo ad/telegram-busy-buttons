@@ -120,9 +120,9 @@ func toLatin(str string) string {
 
 	var buffer bytes.Buffer
 
-	for _, r := range []rune(str) {
+	for _, r := range str {
 		if unicode.Is(unicode.Cyrillic, r) {
-			buffer.WriteRune(translit[r])
+			buffer.WriteRune(translit[rune(r)])
 
 			continue
 		}
