@@ -35,28 +35,28 @@ type getUpdatesResponse struct {
 }
 
 func (s *serverMock) handler(rw http.ResponseWriter, req *http.Request) {
-	if req.URL.String() == "/bot/getMe" {
+	if req.URL.String() == "/bottest_token/getMe" {
 		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
 		if err != nil {
 			panic(err)
 		}
 		return
 	}
-	if req.URL.String() == "/bot/editMessageText" {
+	if req.URL.String() == "/bottest_token/editMessageText" {
 		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
 		if err != nil {
 			panic(err)
 		}
 		return
 	}
-	if req.URL.String() == "/bot/answerCallbackQuery" {
+	if req.URL.String() == "/bottest_token/answerCallbackQuery" {
 		_, err := rw.Write([]byte(`{"ok":true,"result":{}}`))
 		if err != nil {
 			panic(err)
 		}
 		return
 	}
-	if req.URL.String() == "/bot/getUpdates" {
+	if req.URL.String() == "/bottest_token/getUpdates" {
 		s.handlerGetUpdates(rw)
 		return
 	}
@@ -257,9 +257,12 @@ func Test_handler(t *testing.T) {
 				update: &models.Update{
 					CallbackQuery: &models.CallbackQuery{
 						Data: "free-test",
-						Message: &models.Message{
-							Chat: models.Chat{
-								ID: 1,
+						Message: models.MaybeInaccessibleMessage{
+							Type: models.MaybeInaccessibleMessageTypeMessage,
+							Message: &models.Message{
+								Chat: models.Chat{
+									ID: 1,
+								},
 							},
 						},
 					},
@@ -274,9 +277,12 @@ func Test_handler(t *testing.T) {
 				update: &models.Update{
 					CallbackQuery: &models.CallbackQuery{
 						Data: `{"c": "free-test"}`,
-						Message: &models.Message{
-							Chat: models.Chat{
-								ID: 1,
+						Message: models.MaybeInaccessibleMessage{
+							Type: models.MaybeInaccessibleMessageTypeMessage,
+							Message: &models.Message{
+								Chat: models.Chat{
+									ID: 1,
+								},
 							},
 						},
 					},
@@ -291,12 +297,15 @@ func Test_handler(t *testing.T) {
 				update: &models.Update{
 					CallbackQuery: &models.CallbackQuery{
 						Data: `{"c": "⚡", "n": [1]}`,
-						Message: &models.Message{
-							Chat: models.Chat{
-								ID: 1,
+						Message: models.MaybeInaccessibleMessage{
+							Type: models.MaybeInaccessibleMessageTypeMessage,
+							Message: &models.Message{
+								Chat: models.Chat{
+									ID: 1,
+								},
 							},
 						},
-						Sender: models.User{
+						From: models.User{
 							ID: 1,
 						},
 					},
@@ -311,9 +320,12 @@ func Test_handler(t *testing.T) {
 				update: &models.Update{
 					CallbackQuery: &models.CallbackQuery{
 						Data: `{"c": "free-test"`,
-						Message: &models.Message{
-							Chat: models.Chat{
-								ID: 1,
+						Message: models.MaybeInaccessibleMessage{
+							Type: models.MaybeInaccessibleMessageTypeMessage,
+							Message: &models.Message{
+								Chat: models.Chat{
+									ID: 1,
+								},
 							},
 						},
 					},

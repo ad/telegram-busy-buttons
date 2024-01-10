@@ -107,7 +107,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 			} else {
 				isNotifyPressed = strings.HasPrefix(cbdMessage.Command, "⚡")
 
-				if slices.Contains(cbdMessage.Notify, update.CallbackQuery.Sender.ID) {
+				if slices.Contains(cbdMessage.Notify, update.CallbackQuery.From.ID) {
 					setNotify = true
 				}
 
@@ -118,37 +118,43 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		notificationText := fmt.Sprintf(
 			"%s updated by %s %s",
 			target,
-			update.CallbackQuery.Sender.FirstName,
-			update.CallbackQuery.Sender.LastName,
+			update.CallbackQuery.From.FirstName,
+			update.CallbackQuery.From.LastName,
 		)
 
 		if isNotifyPressed {
-			notifyState := "disabled"
+			notifyState := "enabled"
 			if setNotify {
-				notifyState = "enabled"
+				notifyState = "disabled"
 			}
 			notificationText = fmt.Sprintf(
 				"%s %s %s notifications",
-				update.CallbackQuery.Sender.FirstName,
-				update.CallbackQuery.Sender.LastName,
+				update.CallbackQuery.From.FirstName,
+				update.CallbackQuery.From.LastName,
 				notifyState,
 			)
 		}
 
-		log.Printf("%#v from %d\n", notificationText, update.CallbackQuery.Message.Chat.ID)
+		log.Printf("%#v from %d\n", notificationText, update.CallbackQuery.From.ID)
 
 		kb := &models.InlineKeyboardMarkup{
 			InlineKeyboard: [][]models.InlineKeyboardButton{},
 		}
 
-		messageText := update.CallbackQuery.Message.Text
-		if update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard != nil {
+		if update.CallbackQuery.Message.Type != models.MaybeInaccessibleMessageTypeMessage {
+			return
+		}
+
+		message := update.CallbackQuery.Message.Message
+
+		messageText := message.Text
+		if message.ReplyMarkup.InlineKeyboard != nil {
 			buttons := []models.InlineKeyboardButton{}
 			items := []string{}
 
 			notifyButtonPresent := &CallbackData{}
 			notifyUsers := []int64{}
-			for _, subitems := range update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard {
+			for _, subitems := range message.ReplyMarkup.InlineKeyboard {
 				for _, subitem := range subitems {
 					callbackData := subitem.CallbackData
 
@@ -162,7 +168,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 							if cbd.Notify != nil {
 								for _, i := range cbd.Notify {
 									if cbd.Command == cbdMessage.Command {
-										if i != update.CallbackQuery.Sender.ID {
+										if i != update.CallbackQuery.From.ID {
 											notifyUsers = append(notifyUsers, i)
 										} else {
 											foundInNotify = true
@@ -175,7 +181,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 							if cbd.Command == cbdMessage.Command {
 								if !foundInNotify {
-									notifyUsers = append(notifyUsers, update.CallbackQuery.Sender.ID)
+									notifyUsers = append(notifyUsers, update.CallbackQuery.From.ID)
 								}
 							}
 
@@ -190,7 +196,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 				}
 			}
 
-			for _, subitems := range update.CallbackQuery.Message.ReplyMarkup.InlineKeyboard {
+			for _, subitems := range message.ReplyMarkup.InlineKeyboard {
 				for _, subitem := range subitems {
 					callbackData := subitem.CallbackData
 					// fmt.Printf("%#v\n", i.(map[string]interface{}))
@@ -201,7 +207,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 					if err := json.Unmarshal([]byte(callbackData), cbd); err != nil {
 						log.Printf("error on unmarshal callback data %s\n", err.Error())
 						if callbackData == update.CallbackQuery.Data {
-							cbd.User = shortenUsername(callbackData, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+							cbd.User = shortenUsername(callbackData, update.CallbackQuery.From.FirstName, update.CallbackQuery.From.LastName)
 
 							if strings.HasPrefix(callbackData, "busy-") {
 								text = strings.Replace(text, "🟢 ", "🟢", 1)
@@ -218,7 +224,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 					} else {
 						if cbd.Command == cbdMessage.Command {
 							if !strings.HasPrefix(cbd.Command, "⚡") {
-								cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.Sender.FirstName, update.CallbackQuery.Sender.LastName)
+								cbd.User = shortenUsername(cbd.Command, update.CallbackQuery.From.FirstName, update.CallbackQuery.From.LastName)
 
 								if strings.HasPrefix(cbd.Command, "busy-") {
 									text = strings.Replace(text, "🟢 ", "🟢", 1)
@@ -232,7 +238,7 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 
 								if len(notifyUsers) > 0 {
 									for _, userID := range notifyUsers {
-										if update.CallbackQuery.Sender.ID != userID {
+										if update.CallbackQuery.From.ID != userID {
 											_, _ = b.SendMessage(ctx, &bot.SendMessageParams{
 												ChatID: userID,
 												Text:   fmt.Sprintf("%s status updated by %s", text, cbd.User),
@@ -315,8 +321,8 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 		}
 
 		editedMessage := &bot.EditMessageTextParams{
-			ChatID:      update.CallbackQuery.Message.Chat.ID,
-			MessageID:   update.CallbackQuery.Message.ID,
+			ChatID:      message.Chat.ID,
+			MessageID:   message.ID,
 			Text:        messageText,
 			ReplyMarkup: kb,
 		}
