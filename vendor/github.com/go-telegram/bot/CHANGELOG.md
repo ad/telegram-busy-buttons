@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.1.2 (2024-02-21)
+
+- fix SetMessageReaction marshal func, fix get response for this method
+
+## v1.1.1 (2024-02-21)
+
+- fix typo in json tag `models.UsersShared` for field UserIDs 
+
+## v1.1.0 (2024-02-19)
+
+- support API v7.1
+
+## v1.0.1 (2024-01-15)
+
+- fix: add 'omitempty' to LinkPreviewOptions.URL
+
 ## v1.0.0 (2024-01-10)
 
 - support API v7.0
