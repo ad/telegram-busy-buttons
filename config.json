@@ -1,17 +1,32 @@
 {
+  "version": "0.6.0",
   "name": "telegram-busy-buttons",
-  "version": "0.5.1",
   "slug": "telegram-busy-buttons",
   "description": "",
   "startup": "application",
   "boot": "auto",
+  "image": "danielapatin/telegram-busy-buttons",
   "arch": [
-    "amd64",
-    "armv7",
     "aarch64",
+    "amd64",
+    "armhf",
+    "armv7",
     "i386"
   ],
-  "init": false,
+  "webui": "http://[HOST]:[PORT:5555]/",
+  "panel_admin": true,
+  "panel_icon": "mdi:home-city-outline",
+  "panel_title": "telegram-busy-buttons",
+  "ports": {
+    "5555/tcp": 5555
+  },
+  "ports_description": {
+    "5555/tcp": "Exposed port"
+  },
+  "hassio_api": true,
+  "hassio_role": "default",
+  "homeassistant_api": true,
+  "host_network": false,
   "options": {
     "TOKEN": "test"
   },

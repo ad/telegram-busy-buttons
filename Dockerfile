@@ -1,35 +1,42 @@
-FROM golang:alpine as builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} danielapatin/homeassistant-addon-golang-template as builder
 
-ARG BUILD_ARCH
+ARG BUILD_VERSION
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
 
-RUN apk update && apk add --no-cache ca-certificates && update-ca-certificates
-
-WORKDIR $GOPATH/src/app/
+WORKDIR $GOPATH/src/app
 COPY . .
 COPY config.json /config.json
+RUN echo "Building for ${TARGETOS}/${TARGETARCH} with version ${BUILD_VERSION}"
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -ldflags="-w -s -X main.version=${BUILD_VERSION}" -o /go/bin/app main.go
 
-RUN CGO_ENABLED=0 go build -mod=vendor -ldflags='-w -s -extldflags "-static"' -a -o /go/bin/telegram-busy-buttons .
-
-FROM scratch
-
-ARG BUILD_DATE
-ARG BUILD_REF
-
+FROM --platform=${TARGETPLATFORM:-linux/amd64} scratch
+WORKDIR /app/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
-COPY --from=builder /go/bin/telegram-busy-buttons /go/bin/telegram-busy-buttons
-COPY --from=builder /config.json /config.json
+COPY config.json /config.json
+COPY --from=builder /go/bin/app /go/bin/app
+ENTRYPOINT ["/go/bin/app"]
 
-EXPOSE 18000
+#
+# LABEL target docker image
+#
 
-ENTRYPOINT ["/go/bin/telegram-busy-buttons"]
+# Build arguments
+ARG BUILD_ARCH
+ARG BUILD_DATE
+ARG BUILD_REF
+ARG BUILD_VERSION
 
 # Labels
 LABEL \
     io.hass.name="telegram-busy-buttons" \
     io.hass.description="telegram-busy-buttons" \
     io.hass.arch="${BUILD_ARCH}" \
+    io.hass.version=${BUILD_VERSION} \
     io.hass.type="addon" \
     maintainer="ad <github@apatin.ru>" \
     org.label-schema.description="telegram-busy-buttons" \

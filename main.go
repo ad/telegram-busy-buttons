@@ -67,6 +67,7 @@ func main() {
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handler),
+		bot.WithSkipGetMe(),
 	}
 
 	b, newBotError := bot.New(token, opts...)
