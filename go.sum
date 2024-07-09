@@ -1,7 +1,7 @@
 github.com/go-telegram/bot v1.5.0 h1:q31yJ8iajFG54b17TgSs/Brl2YkWziRjf4Au5pe3xV0=
 github.com/go-telegram/bot v1.5.0/go.mod h1:i2TRs7fXWIeaceF3z7KzsMt/he0TwkVC680mvdTFYeM=
-github.com/tdewolff/minify/v2 v2.20.35 h1:/Vq/oivpkFyi2PViD25XHZZbJz+eO4OmPSgePex1kBU=
-github.com/tdewolff/minify/v2 v2.20.35/go.mod h1:L1VYef/jwKw6Wwyk5A+T0mBjjn3mMPgmjjA688RNsxU=
+github.com/tdewolff/minify/v2 v2.20.36 h1:uhbCO5NNS0UgJfEyE/ZR+xU5DL9Dz0ngrJ8W9A6coCQ=
+github.com/tdewolff/minify/v2 v2.20.36/go.mod h1:L1VYef/jwKw6Wwyk5A+T0mBjjn3mMPgmjjA688RNsxU=
 github.com/tdewolff/parse/v2 v2.7.15 h1:hysDXtdGZIRF5UZXwpfn3ZWRbm+ru4l53/ajBRGpCTw=
 github.com/tdewolff/parse/v2 v2.7.15/go.mod h1:3FbJWZp3XT9OWVN3Hmfp0p/a08v4h8J9W1aghka0soA=
 github.com/tdewolff/test v1.0.11-0.20231101010635-f1265d231d52/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
