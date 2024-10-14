@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/go-telegram/bot v1.8.4
-	github.com/tdewolff/minify/v2 v2.20.37
+	github.com/tdewolff/minify/v2 v2.21.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/text v0.19.0
 )
 
-require github.com/tdewolff/parse/v2 v2.7.15 // indirect
+require github.com/tdewolff/parse/v2 v2.7.17 // indirect
