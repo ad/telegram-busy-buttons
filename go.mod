@@ -6,9 +6,9 @@ toolchain go1.23.3
 
 require (
 	github.com/go-telegram/bot v1.11.1
-	github.com/tdewolff/minify/v2 v2.21.1
+	github.com/tdewolff/minify/v2 v2.21.2
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	golang.org/x/text v0.20.0
 )
 
-require github.com/tdewolff/parse/v2 v2.7.18 // indirect
+require github.com/tdewolff/parse/v2 v2.7.19 // indirect
