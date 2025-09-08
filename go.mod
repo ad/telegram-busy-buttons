@@ -2,8 +2,6 @@ module github.com/ad/telegram-busy-buttons
 
 go 1.23.0
 
-toolchain go1.24.1
-
 require (
 	github.com/go-telegram/bot v1.17.0
 	github.com/tdewolff/minify/v2 v2.24.3
