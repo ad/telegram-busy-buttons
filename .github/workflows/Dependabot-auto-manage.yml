@@ -13,6 +13,10 @@ jobs:
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
+      - name: Set up GitHub CLI
+        uses: cli/cli-action@v2
+        with:
+          gh-version: latest
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
