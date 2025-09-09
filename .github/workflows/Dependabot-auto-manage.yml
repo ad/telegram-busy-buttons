@@ -13,10 +13,9 @@ jobs:
     env:
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
     steps:
-      - name: Set up GitHub CLI
-        uses: cli/cli-action@v2.40.1
-        with:
-          gh-version: latest
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@v2
@@ -25,17 +24,19 @@ jobs:
         if: steps.metadata.outputs.dependency-type == 'direct:production'
         run: |
           set -euo pipefail
-          NAME=$(gh label list --repo "$GITHUB_REPOSITORY" --limit 1000 --json name --jq '.[] | select(.name=="production") | .name')
+          NAME=$(gh label list --repo "${{ github.repository }}" --limit 1000 --json name --jq '.[] | select(.name=="production") | .name')
           if [ -z "$NAME" ]; then
-            gh label create "production" --repo "$GITHUB_REPOSITORY" --color "0E8A16" --description "Auto-approved Dependabot PRs ready for production"
+            gh label create "production" --repo "${{ github.repository }}" --color "0E8A16" --description "Auto-approved Dependabot PRs ready for production"
           fi
 
       - name: Add "production" label
         if: steps.metadata.outputs.dependency-type == 'direct:production'
         run: gh pr edit "${{ github.event.pull_request.html_url }}" --add-label "production"
 
-      - name: Approve PR
+      - name: Approve PR (production dependencies only)
+        if: steps.metadata.outputs.dependency-type == 'direct:production'
         run: gh pr review --repo "${{ github.repository }}" --approve "${{ github.event.pull_request.number }}"
 
-      - name: Auto-merge PR
-        run: gh pr merge --repo "${{ github.repository }}" --rebase --auto "${{ github.event.pull_request.number }}"
+      - name: Auto-merge PR (production dependencies only)
+        if: steps.metadata.outputs.dependency-type == 'direct:production'
+        run: gh pr merge --repo "${{ github.repository }}" --squash --auto "${{ github.event.pull_request.number }}"
