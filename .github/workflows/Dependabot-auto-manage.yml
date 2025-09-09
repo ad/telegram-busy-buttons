@@ -94,4 +94,4 @@ jobs:
         if: |
           (github.event_name == 'pull_request' && steps.metadata.outputs.dependency-type == 'direct:production') ||
           (github.event_name == 'workflow_dispatch' && steps.manual_metadata.outputs.dependency-type == 'direct:production')
-        run: gh pr merge --repo "${{ github.repository }}" --squash --auto "${{ env.PR_NUMBER }}"
+        run: gh pr merge --repo "${{ github.repository }}" --squash "${{ env.PR_NUMBER }}"
