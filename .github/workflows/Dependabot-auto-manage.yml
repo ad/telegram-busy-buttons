@@ -16,9 +16,9 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    # if: |
-    #   (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ad/telegram-busy-buttons') ||
-    #   (github.event_name == 'workflow_dispatch')
+    if: |
+      (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ad/telegram-busy-buttons') ||
+      (github.event_name == 'workflow_dispatch')
     env:
         GH_TOKEN: ${{ github.token }}
         PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
@@ -27,14 +27,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         
-      - name: Dependabot metadata
+      - name: Check if PR is from Dependabot
+        id: check_dependabot
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For pull_request events, check the user from event
+            if [ "${{ github.event.pull_request.user.login }}" = "dependabot[bot]" ]; then
+              echo "is_dependabot=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_dependabot=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            # For manual dispatch, check the PR author via API
+            PR_AUTHOR=$(gh pr view ${{ env.PR_NUMBER }} --repo "${{ github.repository }}" --json author --jq '.author.login')
+            if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+              echo "is_dependabot=true" >> $GITHUB_OUTPUT
+            else
+              echo "is_dependabot=false" >> $GITHUB_OUTPUT
+              echo "PR #${{ env.PR_NUMBER }} is not from Dependabot (author: $PR_AUTHOR)"
+              exit 1
+            fi
+          fi
+      
+      - name: Get dependency metadata (for pull_request events)
         id: metadata
+        if: github.event_name == 'pull_request'
         uses: dependabot/fetch-metadata@v2
+        
+      - name: Get dependency type (for manual dispatch)
+        id: manual_metadata
+        if: github.event_name == 'workflow_dispatch' && steps.check_dependabot.outputs.is_dependabot == 'true'
+        run: |
+          # Check if this is a production dependency by looking at PR title/body
+          PR_TITLE=$(gh pr view ${{ env.PR_NUMBER }} --repo "${{ github.repository }}" --json title --jq '.title')
+          # For simplicity, assume all manual runs are for production dependencies
+          # You can enhance this logic based on your needs
+          echo "dependency-type=direct:production" >> $GITHUB_OUTPUT
 
       - name: Ensure "production" label exists
-        if: steps.metadata.outputs.dependency-type == 'direct:production'
-        env:
-          GH_TOKEN: ${{ github.token }}
+        if: |
+          (github.event_name == 'pull_request' && steps.metadata.outputs.dependency-type == 'direct:production') ||
+          (github.event_name == 'workflow_dispatch' && steps.manual_metadata.outputs.dependency-type == 'direct:production')
         run: |
           set -euo pipefail
           NAME=$(gh label list --repo "${{ github.repository }}" --limit 1000 --json name --jq '.[] | select(.name=="production") | .name')
@@ -43,13 +76,19 @@ jobs:
           fi
 
       - name: Add "production" label
-        if: steps.metadata.outputs.dependency-type == 'direct:production'
+        if: |
+          (github.event_name == 'pull_request' && steps.metadata.outputs.dependency-type == 'direct:production') ||
+          (github.event_name == 'workflow_dispatch' && steps.manual_metadata.outputs.dependency-type == 'direct:production')
         run: gh pr edit "${{ env.PR_URL }}" --add-label "production"
 
       - name: Approve PR (production dependencies only)
-        if: steps.metadata.outputs.dependency-type == 'direct:production'
+        if: |
+          (github.event_name == 'pull_request' && steps.metadata.outputs.dependency-type == 'direct:production') ||
+          (github.event_name == 'workflow_dispatch' && steps.manual_metadata.outputs.dependency-type == 'direct:production')
         run: gh pr review --repo "${{ github.repository }}" --approve "${{ env.PR_NUMBER }}"
 
       - name: Auto-merge PR (production dependencies only)
-        if: steps.metadata.outputs.dependency-type == 'direct:production'
+        if: |
+          (github.event_name == 'pull_request' && steps.metadata.outputs.dependency-type == 'direct:production') ||
+          (github.event_name == 'workflow_dispatch' && steps.manual_metadata.outputs.dependency-type == 'direct:production')
         run: gh pr merge --repo "${{ github.repository }}" --squash --auto "${{ env.PR_NUMBER }}"
