@@ -1,5 +1,12 @@
 name: Dependabot auto-manage
-on: pull_request
+on: 
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process'
+        required: true
+        type: number
 
 permissions:
   contents: write
@@ -9,9 +16,13 @@ permissions:
 jobs:
   dependabot:
     runs-on: ubuntu-latest
-    #if: github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ad/telegram-busy-buttons'
+    # if: |
+    #   (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ad/telegram-busy-buttons') ||
+    #   (github.event_name == 'workflow_dispatch')
     env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
+        PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number || github.event.pull_request.number }}
+        PR_URL: ${{ github.event_name == 'workflow_dispatch' && format('https://github.com/{0}/pull/{1}', github.repository, github.event.inputs.pr_number) || github.event.pull_request.html_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,12 +44,12 @@ jobs:
 
       - name: Add "production" label
         if: steps.metadata.outputs.dependency-type == 'direct:production'
-        run: gh pr edit "${{ github.event.pull_request.html_url }}" --add-label "production"
+        run: gh pr edit "${{ env.PR_URL }}" --add-label "production"
 
       - name: Approve PR (production dependencies only)
         if: steps.metadata.outputs.dependency-type == 'direct:production'
-        run: gh pr review --repo "${{ github.repository }}" --approve "${{ github.event.pull_request.number }}"
+        run: gh pr review --repo "${{ github.repository }}" --approve "${{ env.PR_NUMBER }}"
 
       - name: Auto-merge PR (production dependencies only)
         if: steps.metadata.outputs.dependency-type == 'direct:production'
-        run: gh pr merge --repo "${{ github.repository }}" --squash --auto "${{ github.event.pull_request.number }}"
+        run: gh pr merge --repo "${{ github.repository }}" --squash --auto "${{ env.PR_NUMBER }}"
