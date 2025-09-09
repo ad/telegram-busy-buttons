@@ -17,7 +17,7 @@ jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ad/telegram-busy-buttons') ||
+      (github.event_name == 'pull_request' && (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot') && github.repository == 'ad/telegram-busy-buttons') ||
       (github.event_name == 'workflow_dispatch')
     env:
         GH_TOKEN: ${{ github.token }}
@@ -32,7 +32,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             # For pull_request events, check the user from event
-            if [ "${{ github.event.pull_request.user.login }}" = "dependabot[bot]" ]; then
+            if [[ "${{ github.event.pull_request.user.login }}" = "dependabot[bot]" || "${{ github.event.pull_request.user.login }}" = "app/dependabot" ]]; then
               echo "is_dependabot=true" >> $GITHUB_OUTPUT
             else
               echo "is_dependabot=false" >> $GITHUB_OUTPUT
@@ -40,11 +40,14 @@ jobs:
           else
             # For manual dispatch, check the PR author via API
             PR_AUTHOR=$(gh pr view ${{ env.PR_NUMBER }} --repo "${{ github.repository }}" --json author --jq '.author.login')
-            if [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+            echo "PR author: $PR_AUTHOR"
+            # Check for various Dependabot author formats
+            if [[ "$PR_AUTHOR" = "dependabot[bot]" || "$PR_AUTHOR" = "app/dependabot" || "$PR_AUTHOR" = "dependabot" ]]; then
               echo "is_dependabot=true" >> $GITHUB_OUTPUT
+              echo "✅ PR #${{ env.PR_NUMBER }} is from Dependabot (author: $PR_AUTHOR)"
             else
               echo "is_dependabot=false" >> $GITHUB_OUTPUT
-              echo "PR #${{ env.PR_NUMBER }} is not from Dependabot (author: $PR_AUTHOR)"
+              echo "❌ PR #${{ env.PR_NUMBER }} is not from Dependabot (author: $PR_AUTHOR)"
               exit 1
             fi
           fi
