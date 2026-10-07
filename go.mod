@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/go-telegram/bot v1.27.0
-	github.com/tdewolff/minify/v2 v2.24.18
+	github.com/tdewolff/minify/v2 v2.24.19
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	golang.org/x/text v0.42.0
 )
