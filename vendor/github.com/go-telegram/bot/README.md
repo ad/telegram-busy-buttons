@@ -90,6 +90,19 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 If you want to use webhooks, instead of using `bot.Start`, you should use the `bot.StartWebhook` method to start the bot.
 Also, you should use `bot.WebhookHandler()` method as HTTP handler for your server.
 
+For a valid update, `WebhookHandler` returns HTTP 200 once a worker takes the
+update, and the worker then runs its matchers, middlewares and handler. With
+`bot.WithNotAsyncHandlers`, a request therefore waits for a free worker. If
+`StartWebhook` is not running, or the run stops or the request is canceled
+before a worker takes the update, it returns HTTP 503 so Telegram can retry,
+and the update is not handled. An unreadable request body gets HTTP 400 for
+the same reason.
+
+Cancel the context passed to `StartWebhook` to shut down. Handlers receive a
+context derived from it that is canceled when the run stops. `StartWebhook`
+waits for running handlers to return. Cancel it before shutting down the HTTP
+server, so that requests still waiting for a worker get 503 right away.
+
 ```go
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -97,16 +110,24 @@ func main() {
 
 	opts := []bot.Option{
 		bot.WithDefaultHandler(handler),
-		bot.WithWebhookSecretToken(os.Getenv("EXAMPLE_TELEGRAM_WEBHOOK_SECRET_TOKEN"))
+		bot.WithWebhookSecretToken(os.Getenv("EXAMPLE_TELEGRAM_WEBHOOK_SECRET_TOKEN")),
 	}
 
-	b, _ := bot.New(os.Getenv("EXAMPLE_TELEGRAM_BOT_TOKEN"), opts...)
+	b, err := bot.New(os.Getenv("EXAMPLE_TELEGRAM_BOT_TOKEN"), opts...)
+	if err != nil {
+		panic(err)
+	}
 
 	// call methods.SetWebhook if needed
 
-	go b.StartWebhook(ctx)
+	go func() {
+		if err := http.ListenAndServe(":2000", b.WebhookHandler()); err != nil {
+			log.Printf("webhook server: %v", err)
+			cancel()
+		}
+	}()
 
-	http.ListenAndServe(":2000", b.WebhookHandler())
+	b.StartWebhook(ctx)
 
 	// call methods.DeleteWebhook if needed
 }
@@ -120,6 +141,39 @@ func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
 ```
 
 [Demo in examples](examples/echo_with_webhook/main.go)
+
+### Webhook replies
+
+A handler can also answer an update in the response to the webhook request that
+delivered it. However, Telegram does not report whether the call succeeded.
+See [Making requests when getting updates](https://core.telegram.org/bots/api#making-requests-when-getting-updates).
+
+Use `bot.WebhookReplyHandler()` as the HTTP handler instead of
+`bot.WebhookHandler()`. It runs the handler for each update in the goroutine
+serving the request and responds once the handler returns, so `bot.StartWebhook`
+is not needed. In the handler, call `bot.WebhookReply` with the method name and
+its parameters:
+
+```go
+func main() {
+	b, _ := bot.New(os.Getenv("EXAMPLE_TELEGRAM_BOT_TOKEN"), bot.WithDefaultHandler(handler))
+
+	http.ListenAndServe(":2000", b.WebhookReplyHandler())
+}
+
+func handler(ctx context.Context, b *bot.Bot, update *models.Update) {
+	b.WebhookReply(ctx, "sendMessage", &bot.SendMessageParams{
+		ChatID: update.Message.Chat.ID,
+		Text:   update.Message.Text,
+	})
+}
+```
+
+A handler can reply only once per update, and only before it returns.
+Otherwise, `bot.WebhookReply` returns an error wrapping
+`bot.ErrorWebhookReplyUnavailable`.
+
+[Demo in examples](examples/inline_mode_webhook_reply/main.go)
 
 Also, you can manually process updates with `bot.ProcessUpdate` method.
 
